@@ -24,8 +24,8 @@ css/style.css       thème doodle, tout le style du site
 js/game.js          moteur de tri d'emojis (les 4 modes « Tri »)
 js/arcade.js        hôte : ARCADE.register / open / close
 js/games/*.js       un fichier par mini-jeu
-public/park/        décor et vignettes de Ma Fête Foraine
-netlify.toml        config Netlify (site statique, no-cache sur js/css)
+assets/park/        décor et vignettes de Ma Fête Foraine
+vercel.json         config Vercel (site statique, pas de build, en-têtes de cache)
 ```
 
 ### Ajouter un mini-jeu
@@ -75,5 +75,10 @@ python3 -m http.server 8000
 
 ## Déploiement
 
-Déployé sur **Netlify** depuis ce dépôt : site statique, pas de commande de build,
-répertoire publié = racine (`netlify.toml`). Chaque `git push` sur `main` redéploie.
+Déployé sur **Vercel** depuis ce dépôt : site statique, aucune commande de build,
+répertoire de sortie = racine. Tout est décrit dans `vercel.json`. Chaque `git push`
+sur `main` redéploie automatiquement.
+
+Note : les fichiers statiques vivent dans `assets/` et non `public/`, parce que Vercel
+traite un dossier `public/` à la racine comme le répertoire de sortie du build et ne
+servirait alors plus `index.html`.

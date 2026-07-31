@@ -1,8 +1,9 @@
 node_modules/
 .DS_Store
+.vercel/
 .netlify/
 *.log
 
 # Images sources générées (lourdes, non utilisées par le site).
-# Les versions découpées et optimisées vivent dans public/park/
-public/craiyon_*.png
+# Les versions découpées et optimisées vivent dans assets/park/
+assets/craiyon_*.png

@@ -1,7 +1,7 @@
 /* =========================================================
    Arcade Tycoon v3 — « Ma Fête Foraine »
    Refonte complète : progression étape par étape sur un parc
-   de 9 emplacements (grille du fond public/park/bg.jpg).
+   de 9 emplacements (grille du fond assets/park/bg.jpg).
 
    PRINCIPE ANTI-INFLATION (le point clé de la refonte) :
    une SAISON est FINIE. 9 attractions, 25 niveaux chacune,
@@ -143,10 +143,10 @@
       style.textContent = `
         .pk-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
           font-family:Fredoka,system-ui,sans-serif;color:${C.ink};overflow:hidden;background:#123043;}
-        .pk-wrap::before{content:'';position:absolute;inset:-30px;background:url('public/park/bg.jpg') center/cover;
+        .pk-wrap::before{content:'';position:absolute;inset:-30px;background:url('assets/park/bg.jpg') center/cover;
           filter:blur(22px) brightness(.72) saturate(1.1);}
         .pk-park{position:relative;width:100%;aspect-ratio:768/1344;max-height:100%;
-          background:url('public/park/bg.jpg') center/100% 100% no-repeat;user-select:none;-webkit-user-select:none;}
+          background:url('assets/park/bg.jpg') center/100% 100% no-repeat;user-select:none;-webkit-user-select:none;}
         .pk-a{position:absolute;box-sizing:border-box;}
 
         /* --- HUD (recouvre la bannière d'origine) --- */
@@ -463,7 +463,7 @@
             const c = cost1(i), can = save.tokens >= c;
             box.innerHTML = `
               <h2>${a.emoji} ${a.name}</h2>
-              <img class="pk-thumb" src="public/park/att/${a.id}.jpg" alt="${a.name}" style="opacity:.45;filter:grayscale(.6)">
+              <img class="pk-thumb" src="assets/park/att/${a.id}.jpg" alt="${a.name}" style="opacity:.45;filter:grayscale(.6)">
               <p>Prête à être construite !<br>Elle produira <b>${fmt(a.base * note().m * prodPerk())} 🎟️/s</b> au niveau 1.</p>
               <button class="pk-btn ${can ? "g" : "off"}" data-act="buy">🔨 Construire · 🎟️ ${fmt(c)}</button>
               <button class="pk-btn sm neutral" data-act="close">Fermer</button>`;
@@ -471,7 +471,7 @@
             const p = ATTR[i - 1];
             box.innerHTML = `
               <h2>🔒 ${a.name}</h2>
-              <img class="pk-thumb" src="public/park/att/${a.id}.jpg" alt="" style="opacity:.2;filter:grayscale(1)">
+              <img class="pk-thumb" src="assets/park/att/${a.id}.jpg" alt="" style="opacity:.2;filter:grayscale(1)">
               <p>Emplacement verrouillé.<br>Monte <b>${p.emoji} ${p.name}</b> au <b>niveau ${GATE}</b><br>(actuellement ${save.lv[i - 1]}/${GATE}) pour l'ouvrir.</p>
               <div class="pk-bar"><i style="width:${Math.min(100, (save.lv[i - 1] / GATE) * 100)}%"></i></div>
               <button class="pk-btn sm neutral" data-act="close">Fermer</button>`;
@@ -485,7 +485,7 @@
         const chefOk = save.chef[i], cc = chefCost(i);
         box.innerHTML = `
           <h2>${a.emoji} ${a.name}</h2>
-          <img class="pk-thumb" src="public/park/att/${a.id}.jpg" alt="${a.name}">
+          <img class="pk-thumb" src="assets/park/att/${a.id}.jpg" alt="${a.name}">
           <div style="font-weight:700;font-size:1.05rem">Niveau ${lv} / ${MAXL} ${"⭐".repeat(msCount(lv))}</div>
           <div class="pk-bar"><i style="width:${(lv / MAXL) * 100}%"></i></div>
           <p>Produit <b>${fmt(attrRate(i) * prodPerk() * note().m)} 🎟️/s</b>${save.chef[i] ? " · chef +50 %" : ""}<br>
@@ -600,7 +600,7 @@
               : `<div class="ph pk-lock">🔒<small>niv. ${save.lv[i - 1]}/${GATE}</small></div>`;
           } else {
             s.el.innerHTML =
-              `<img src="public/park/att/${a.id}.jpg" alt="${a.name}">` +
+              `<img src="assets/park/att/${a.id}.jpg" alt="${a.name}">` +
               (lv >= MAXL ? `<div class="pk-max"></div>` : "") +
               `<div class="pk-badge">${lv}</div>` +
               (msCount(lv) ? `<div class="pk-stars">${"⭐".repeat(msCount(lv))}</div>` : "") +
