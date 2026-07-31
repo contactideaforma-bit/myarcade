@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#9b7ede" />
+  <title>My Arcade — le coin des jeux tranquilles</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Patrick+Hand&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>" />
+</head>
+<body>
+  <div class="bg-layer" id="bgLayer"></div>
+
+  <main class="app" id="app">
+    <!-- Barre du haut -->
+    <header class="topbar">
+      <div class="level-info">
+        <span class="level-name" id="levelName">Niveau 1</span>
+        <div class="progress"><span id="progressBar"></span></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="homeBtn" title="Menu / mode de jeu" aria-label="Menu">🏠</button>
+        <button class="icon-btn" id="soundBtn" title="Son" aria-label="Activer/couper le son">🔊</button>
+        <button class="icon-btn" id="bgBtn" title="Changer le fond" aria-label="Changer le fond">🎨</button>
+        <button class="icon-btn" id="restartBtn" title="Recommencer" aria-label="Recommencer le niveau">↺</button>
+      </div>
+    </header>
+
+    <div class="scoreline">
+      <span class="score">⭐ <b id="score">0</b></span>
+      <span class="combo" id="combo" hidden></span>
+      <span class="hint" id="hint">Range chaque emoji dans sa case</span>
+    </div>
+
+    <!-- Zone des emojis à trier (stage = couche zoomable, pincement à 2 doigts) -->
+    <section class="pool" id="pool" aria-label="Emojis à trier">
+      <div class="stage" id="stage"></div>
+    </section>
+
+    <!-- Cases cibles -->
+    <section class="bins" id="bins" aria-label="Cases de tri"></section>
+  </main>
+
+  <!-- Palette de fonds -->
+  <div class="sheet" id="bgSheet" hidden>
+    <div class="sheet-card">
+      <h2>Fond d'écran</h2>
+      <p class="wallet-line" id="walletLine"></p>
+      <div class="swatches" id="swatches"></div>
+      <button class="btn ghost" id="bgClose">Fermer</button>
+    </div>
+  </div>
+
+  <!-- Overlay fin de niveau -->
+  <div class="overlay" id="overlay" hidden>
+    <div class="overlay-card">
+      <div class="stars" id="stars">⭐⭐⭐</div>
+      <h1 id="overlayTitle">Bravo&nbsp;!</h1>
+      <p id="overlaySub">Niveau terminé</p>
+      <div class="objs" id="objs" hidden></div>
+      <div class="overlay-actions">
+        <button class="btn ghost" id="replayBtn">Rejouer</button>
+        <button class="btn primary" id="nextBtn">Niveau suivant →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= HUB « My Arcade » (accueil doodle) ======= -->
+  <div class="hub" id="home" hidden>
+    <button class="hub-close" id="homeClose" aria-label="Reprendre la partie" hidden>✕ reprendre</button>
+
+    <header class="hub-head">
+      <div class="logo">MY<span class="joy">🕹️</span>
+        <span class="big"><b>A</b><b>R</b><b>C</b><b>A</b><b>D</b><b>E</b></span>
+      </div>
+      <div class="tagline">tout un arcade dans ta poche ✦</div>
+      <div class="streak">🔥 <b id="streakDays">1</b> jour · ⭐ <b id="streakScore">0</b></div>
+    </header>
+
+    <!-- Vedettes : les grands jeux -->
+    <div class="section-label">⭐ Les grands jeux</div>
+    <div class="grid">
+      <button class="tile" data-game="tycoon"><span class="pin c4"></span><span class="badge">new</span><span class="t-emoji">🎡</span><span class="t-name">Ma Fête Foraine</span><span class="t-desc">Construis 9 attractions, encaisse même absent</span></button>
+      <button class="tile" data-game="hole"><span class="pin c1"></span><span class="badge">new</span><span class="t-emoji">🕳️</span><span class="t-name">Emoji Hole</span><span class="t-desc">Avale tout, grossis, deviens énorme</span></button>
+      <button class="tile" id="dailyTile"><span class="pin c2"></span><span class="badge" id="dailyBadge">à toi !</span><span class="t-emoji">🎯</span><span class="t-name">Défi du jour</span><span class="t-desc">Un niveau unique par jour — garde ta série 🔥</span></button>
+    </div>
+
+    <!-- Tri & rangement (jouables) -->
+    <div class="section-label">🧺 Tri &amp; rangement</div>
+    <div class="grid">
+      <button class="tile" data-mode="familles"><span class="pin c1"></span><span class="t-emoji">🧺</span><span class="t-name">Familles</span><span class="t-desc">Range chaque emoji dans sa case</span></button>
+      <button class="tile" data-mode="jumeaux"><span class="pin c2"></span><span class="t-emoji">👯</span><span class="t-name">Jumeaux</span><span class="t-desc">Retrouve le double de chaque emoji</span></button>
+      <button class="tile" data-mode="couleurs"><span class="pin c3"></span><span class="badge">new</span><span class="t-emoji">🌈</span><span class="t-name">Couleurs</span><span class="t-desc">Trie le tas par teinte</span></button>
+      <button class="tile" data-mode="match3"><span class="pin c4"></span><span class="t-emoji">💥</span><span class="t-name">Match-3</span><span class="t-desc">Tape 3 identiques, ça explose</span></button>
+    </div>
+
+    <!-- Casse-tête -->
+    <div class="section-label">🧩 Casse-tête</div>
+    <div class="grid">
+      <button class="tile" data-game="g2048"><span class="pin c5"></span><span class="t-emoji">🔢</span><span class="t-name">2048</span><span class="t-desc">Fusionne, double, recommence</span></button>
+      <button class="tile" data-game="pairs"><span class="pin c6"></span><span class="t-emoji">🃏</span><span class="t-name">Paires</span><span class="t-desc">Le memory des emojis</span></button>
+      <button class="tile" data-game="slide"><span class="pin c7"></span><span class="t-emoji">🖼️</span><span class="t-name">Taquin</span><span class="t-desc">Remets les tuiles dans l'ordre</span></button>
+      <button class="tile" data-game="mines"><span class="pin c8"></span><span class="t-emoji">💣</span><span class="t-name">Démineur</span><span class="t-desc">Évite les bombes, lis les chiffres</span></button>
+    </div>
+
+    <!-- Stratégie -->
+    <div class="section-label">♟️ Stratégie</div>
+    <div class="grid">
+      <button class="tile" data-game="connect4"><span class="pin c1"></span><span class="t-emoji">🔴</span><span class="t-name">Puissance 4</span><span class="t-desc">Aligne-en 4 avant l'ordi</span></button>
+      <button class="tile" data-game="tictactoe"><span class="pin c2"></span><span class="t-emoji">❎</span><span class="t-name">Morpion</span><span class="t-desc">Le tic-tac-toe malin</span></button>
+    </div>
+
+    <!-- Arcade & réflexe -->
+    <div class="section-label">🕹️ Arcade &amp; réflexe</div>
+    <div class="grid">
+      <button class="tile" data-game="snake"><span class="pin c3"></span><span class="t-emoji">🐍</span><span class="t-name">Serpent</span><span class="t-desc">Mange, grandis, ne te mords pas</span></button>
+      <button class="tile" data-game="breakout"><span class="pin c4"></span><span class="t-emoji">🧱</span><span class="t-name">Casse-briques</span><span class="t-desc">La balle et la raquette</span></button>
+      <button class="tile" data-game="whack"><span class="pin c5"></span><span class="t-emoji">🔨</span><span class="t-name">Taupes</span><span class="t-desc">Tape-les avant qu'elles filent</span></button>
+      <button class="tile" data-game="simon"><span class="pin c6"></span><span class="t-emoji">🎵</span><span class="t-name">Séquence</span><span class="t-desc">Retiens l'ordre et rejoue</span></button>
+    </div>
+
+    <!-- Zen -->
+    <div class="section-label">☁️ Zen &amp; détente</div>
+    <div class="grid">
+      <button class="tile" data-game="zen"><span class="pin c7"></span><span class="t-emoji">♾️</span><span class="t-name">Zen</span><span class="t-desc">Un flux d'emojis à trier, sans fin</span></button>
+      <button class="tile" data-game="pop"><span class="pin c8"></span><span class="t-emoji">🫧</span><span class="t-name">Pop</span><span class="t-desc">Fais éclater les bulles</span></button>
+    </div>
+
+    <div class="hub-foot">joue • range • respire — My Arcade v2</div>
+
+    <!-- Dock -->
+    <nav class="dock">
+      <button class="dock-btn active" id="dockHome" title="Accueil">🏠</button>
+      <button class="dock-btn" id="dockBg" title="Fonds d'écran">🎨</button>
+      <button class="dock-btn" id="dockTrophies" title="Trophées">🏆</button>
+      <button class="dock-btn" id="dockSettings" title="Réglages">⚙️</button>
+    </nav>
+  </div>
+
+  <!-- ======= Hôte plein écran des mini-jeux ======= -->
+  <div class="arcade" id="arcade" hidden>
+    <header class="ar-head">
+      <button class="ar-back" id="arBack" aria-label="Retour au menu">←</button>
+      <span class="ar-title" id="arTitle">Jeu</span>
+      <span class="ar-status" id="arStatus"></span>
+    </header>
+    <div class="ar-board" id="arBoard"></div>
+  </div>
+
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="js/game.js"></script>
+  <script src="js/arcade.js"></script>
+  <script src="js/games/g2048.js"></script>
+  <script src="js/games/pairs.js"></script>
+  <script src="js/games/slide.js"></script>
+  <script src="js/games/mines.js"></script>
+  <script src="js/games/connect4.js"></script>
+  <script src="js/games/tictactoe.js"></script>
+  <script src="js/games/snake.js"></script>
+  <script src="js/games/breakout.js"></script>
+  <script src="js/games/whack.js"></script>
+  <script src="js/games/simon.js"></script>
+  <script src="js/games/zen.js"></script>
+  <script src="js/games/pop.js"></script>
+  <script src="js/games/tycoon.js"></script>
+  <script src="js/games/emojihole.js"></script>
+</body>
+</html>

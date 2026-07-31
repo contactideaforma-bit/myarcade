@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+.netlify/
+*.log
+
+# Images sources générées (lourdes, non utilisées par le site).
+# Les versions découpées et optimisées vivent dans public/park/
+public/craiyon_*.png

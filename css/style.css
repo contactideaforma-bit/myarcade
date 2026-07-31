@@ -1,0 +1,800 @@
+/* ===== TRIAGE — feuille de style ===== */
+:root {
+  --ui: #ffffff;
+  --ink: #1f2440;
+  --muted: #6b7196;
+  --accent: #5b6cff;
+  --accent-2: #ff6ba6;
+  --good: #35c98a;
+  --bad: #ff5b6e;
+  --card: rgba(255, 255, 255, 0.82);
+  --radius: 22px;
+  --shadow: 0 10px 30px rgba(30, 30, 70, 0.18);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: "Fredoka", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: #10132b;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+/* ---- Fond personnalisable ---- */
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  transition: background 0.5s ease, filter 0.5s ease;
+  background: linear-gradient(160deg, #7f9cff, #b78cff 55%, #ff9ecf);
+}
+
+/* ---- Cadre appli (format mobile) ---- */
+.app {
+  position: relative;
+  max-width: 480px;
+  margin: 0 auto;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 12px);
+  gap: 10px;
+}
+
+/* ---- Barre du haut ---- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.level-info { flex: 1; min-width: 0; }
+.level-name {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.progress {
+  margin-top: 6px;
+  height: 8px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 20px;
+  background: linear-gradient(90deg, #fff, #ffe58a);
+  transition: width 0.35s ease;
+}
+.topbar-actions { display: flex; gap: 8px; }
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+  font-size: 1.15rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 0.12s ease;
+}
+.icon-btn:active { transform: scale(0.9); }
+
+.scoreline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+.score { font-size: 1.1rem; font-weight: 600; }
+.hint {
+  font-size: 0.82rem;
+  opacity: 0.9;
+  text-align: right;
+  font-weight: 400;
+}
+/* Badge de combo (série de bons rangements) */
+.combo {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #fff;
+  background: linear-gradient(135deg, #ff9f43, #ff5b6e);
+  padding: 3px 11px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+  text-shadow: none;
+}
+.combo.pulse { animation: comboPulse 0.35s ease; }
+@keyframes comboPulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.28) rotate(-2deg); }
+  100% { transform: scale(1); }
+}
+/* Petit "+N" flottant quand on marque des points */
+.score-float {
+  position: fixed;
+  z-index: 70;
+  pointer-events: none;
+  font-family: "Fredoka", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, -50%);
+  animation: floatUp 0.8s ease forwards;
+}
+@keyframes floatUp {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -150%) scale(1.35); }
+}
+
+/* ---- Zone des emojis à trier ---- */
+.pool {
+  position: relative;
+  flex: 1;
+  padding: 6px;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  /* PAS de backdrop-filter ici : il créerait un contexte d'empilement qui
+     coincerait l'emoji tiré SOUS les cases. */
+  overflow: hidden;              /* rogne la couche zoomée dans la zone de jeu */
+  min-height: 0;
+  touch-action: none;            /* on gère nous-mêmes zoom/déplacement */
+}
+/* pendant un glissement, on laisse l'emoji dépasser pour survoler les cases */
+.pool.dragging { overflow: visible; }
+/* ...sauf en état zoomé : la couche agrandie déborderait sur toute l'UI et
+   l'emoji dragué passerait SOUS les bacs (contexte d'empilement du transform).
+   On garde alors le rognage — le drop par coordonnées fonctionne pareil. */
+.pool.zoomed.dragging { overflow: hidden; }
+
+/* Couche zoomable : contient les emojis, transformée pour le zoom/déplacement */
+.stage {
+  position: absolute;
+  inset: 6px;                    /* = padding du plateau */
+  transform-origin: 0 0;
+  will-change: transform;
+  touch-action: none;
+}
+
+
+/* ---- Emoji brut en relief 3D, éparpillé en vrac ---- */
+.token {
+  --size: 48px;
+  position: absolute;
+  width: calc(var(--size) * 1.12);
+  height: calc(var(--size) * 1.12);
+  display: grid;
+  place-items: center;
+  font-size: var(--size);
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+  /* relief = ombres portées empilées sous le glyphe emoji */
+  filter:
+    drop-shadow(0 2px 1px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 5px 4px rgba(0, 0, 0, 0.35))
+    drop-shadow(0 9px 8px rgba(0, 0, 0, 0.22));
+  transition: filter 0.12s ease;
+  will-change: transform, left, top;
+}
+.token.grabbing { cursor: grabbing; }
+/* Grands nombres (>250 emojis) : une seule ombre → rendu bien plus léger */
+.pool.lite .token {
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+}
+/* ---- Jetons spéciaux (placés AVANT .selected pour que le halo de
+   sélection garde le dernier mot) ---- */
+/* ambigu : valide dans 2 bacs — lueur dorée douce */
+.token.dual { filter: drop-shadow(0 0 5px rgba(255, 210, 62, 0.9)) drop-shadow(0 4px 4px rgba(0, 0, 0, 0.35)); }
+.pool.lite .token.dual { filter: drop-shadow(0 0 5px rgba(255, 210, 62, 0.9)); }
+/* doré : points ×2 — gros glow chaud */
+.token.gold { filter: drop-shadow(0 0 7px #ffd23e) drop-shadow(0 0 15px #ffb703) drop-shadow(0 4px 4px rgba(0, 0, 0, 0.35)); }
+.pool.lite .token.gold { filter: drop-shadow(0 0 7px #ffd23e) drop-shadow(0 0 15px #ffb703); }
+/* gelé : terne + halo glacé, ❄️ dans le coin ; le 1er bon geste brise la glace */
+.token.frozen { filter: saturate(0.45) brightness(1.15) drop-shadow(0 0 6px #9ad7ff); }
+.pool.lite .token.frozen { filter: saturate(0.45) brightness(1.15) drop-shadow(0 0 6px #9ad7ff); }
+.token.frozen::after {
+  content: "❄️";
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  font-size: calc(var(--size) * 0.42);
+}
+
+/* ...mais un emoji SÉLECTIONNÉ garde son halo même en mode allégé
+   (sinon la règle .pool.lite .token masquait le glow → sélection invisible). */
+.pool.lite .token.selected,
+.pool.lite .token.dual.selected,
+.pool.lite .token.gold.selected,
+.pool.lite .token.frozen.selected {
+  filter:
+    drop-shadow(0 0 6px var(--accent))
+    drop-shadow(0 0 13px var(--accent))
+    drop-shadow(0 4px 4px rgba(0, 0, 0, 0.4));
+}
+.token.selected {
+  filter:
+    drop-shadow(0 0 6px var(--accent))
+    drop-shadow(0 0 13px var(--accent))
+    drop-shadow(0 4px 4px rgba(0, 0, 0, 0.4));
+  z-index: 600;
+}
+.token.pop { animation: pop 0.4s ease forwards; }
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.2); opacity: 0.5; }
+  100% { transform: scale(0); opacity: 0; }
+}
+.token.shake { animation: shake 0.4s ease; }
+@keyframes shake {
+  10%, 90% { transform: translateX(-3px); }
+  30%, 70% { transform: translateX(6px); }
+  50% { transform: translateX(-8px); }
+}
+
+/* ---- Cases cibles ---- */
+.bins {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 10px;
+}
+.bin {
+  border-radius: 18px;
+  padding: 10px 6px 8px;
+  /* le bac « se remplit » visuellement au fil du tri (--fillp posé en JS) */
+  background:
+    linear-gradient(to top,
+      rgba(91, 108, 255, 0.18) var(--fillp, 0%),
+      rgba(91, 108, 255, 0) var(--fillp, 0%)),
+    var(--card);
+  box-shadow: var(--shadow);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  border: 2px solid transparent;
+  min-height: 78px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.bin .bin-icon { font-size: 1.7rem; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2)); }
+.bin .bin-label { font-size: 0.72rem; font-weight: 600; color: var(--muted); }
+.bin .bin-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(91, 108, 255, 0.12);
+  border-radius: 10px;
+  padding: 1px 7px;
+  margin-top: 2px;
+}
+.bin.hover { transform: translateY(-4px) scale(1.03); border-color: var(--accent); }
+.bin.correct { animation: binGood 0.45s ease; }
+@keyframes binGood {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.12); box-shadow: 0 0 0 4px var(--good); }
+  100% { transform: scale(1); }
+}
+.bin.wrong { animation: binBad 0.4s ease; }
+@keyframes binBad {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); box-shadow: 0 0 0 3px var(--bad); }
+  75% { transform: translateX(6px); box-shadow: 0 0 0 3px var(--bad); }
+}
+
+/* ---- Mode "jumeaux" : beaucoup de petites cases ---- */
+.bins.grid-many {
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.bins.grid-many .bin {
+  min-height: 50px;
+  padding: 7px 2px 5px;
+  border-radius: 13px;
+}
+.bins.grid-many .bin-icon { font-size: 1.55rem; }
+.bins.grid-many .bin-label { display: none; }
+.bins.grid-many .bin-count {
+  font-size: 0.6rem;
+  padding: 0 5px;
+  margin-top: 1px;
+}
+
+/* ---- Sélecteur de difficulté ---- */
+.diff-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+.diff-btn {
+  border: 2px solid #e4e7f4;
+  background: #f4f5fb;
+  color: var(--muted);
+  border-radius: 13px;
+  padding: 11px 4px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.diff-btn:active { transform: scale(0.95); }
+.diff-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  border-color: transparent;
+}
+.diff-btn.xtreme.active {
+  background: linear-gradient(135deg, #ff4d4d, #ff9a00);
+}
+
+/* ---- Carte des niveaux (sélection + étoiles persistées) ---- */
+.lvl-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+.lvl-btn {
+  border: 2px solid #e4e7f4;
+  background: #f4f5fb;
+  border-radius: 14px;
+  padding: 9px 4px 7px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+.lvl-btn b { font-size: 1.15rem; color: var(--ink, #2b2440); }
+.lvl-btn span { font-size: 0.68rem; letter-spacing: 1px; }
+.lvl-btn:active { transform: scale(0.94); }
+.lvl-btn.current { border-color: var(--accent); background: rgba(91, 108, 255, 0.1); }
+.lvl-btn.locked { opacity: 0.45; cursor: default; }
+
+/* ---- Objectifs secondaires (écran de victoire) ---- */
+.objs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 0.78rem;
+}
+.objs span {
+  background: #f6f5fb;
+  border: 2px solid #e4e2ee;
+  border-radius: 10px;
+  padding: 3px 8px;
+}
+
+/* ---- Menu de choix du mode ---- */
+.mode-list { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.mode-btn {
+  border: none;
+  border-radius: 18px;
+  padding: 16px 18px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.25;
+  transition: transform 0.12s ease;
+  color: #fff;
+}
+.mode-btn:active { transform: scale(0.96); }
+.mode-btn small { display: block; font-weight: 400; font-size: 0.78rem; opacity: 0.9; margin-top: 3px; }
+.mode-btn.a { background: linear-gradient(135deg, #5b6cff, #8f6bff); }
+.mode-btn.b { background: linear-gradient(135deg, #ff6ba6, #ff9a5b); }
+.mode-btn.c { background: linear-gradient(135deg, #35c98a, #00b4d8); }
+
+/* ---- Feuille palette de fonds ---- */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 56;
+  display: grid;
+  place-items: end center;
+  background: rgba(10, 12, 30, 0.5);
+}
+.sheet-card {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 20px 18px calc(env(safe-area-inset-bottom) + 20px);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.28s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-card h2 { margin: 0 0 14px; font-size: 1.1rem; }
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.swatch {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 16px;
+  border: 3px solid transparent;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.12s ease;
+}
+.swatch:active { transform: scale(0.94); }
+.swatch.active { border-color: var(--ink); }
+/* fonds verrouillés : ternes + étiquette de prix (débloqués avec le trésor ⭐) */
+.swatch.locked { filter: saturate(0.4) brightness(0.85); }
+.swatch .price {
+  position: absolute;
+  left: 4px; right: 4px; bottom: 4px;
+  text-align: center;
+  font-family: "Fredoka", sans-serif;
+  font-size: 0.68rem;
+  color: #fff;
+  background: rgba(31, 36, 64, 0.75);
+  border-radius: 8px;
+  padding: 1px 0;
+}
+.wallet-line {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  margin: -6px 0 12px;
+}
+
+/* ---- Overlay victoire ---- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 12, 30, 0.62);
+  padding: 24px;
+}
+.overlay-card {
+  background: #fff;
+  border-radius: 28px;
+  padding: 30px 26px;
+  text-align: center;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  animation: popIn 0.35s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+@keyframes popIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.overlay-card { position: relative; }
+.card-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #eef0f8;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 0.1s ease;
+}
+.card-close:active { transform: scale(0.9); }
+.overlay-card .stars { font-size: 2.2rem; letter-spacing: 4px; margin-bottom: 6px; }
+.overlay-card h1 { margin: 4px 0; font-size: 1.9rem; }
+.overlay-card p { margin: 0 0 20px; color: var(--muted); }
+.overlay-actions { display: flex; gap: 10px; }
+
+/* ---- Boutons ---- */
+.btn {
+  flex: 1;
+  border: none;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+.btn:active { transform: scale(0.95); }
+.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+.btn.ghost { background: #eef0f8; color: var(--ink); }
+
+/* ---- Confettis ---- */
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.confetti i {
+  position: absolute;
+  top: -12px;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  animation: fall linear forwards;
+}
+@keyframes fall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0.9; }
+}
+
+[hidden] { display: none !important; }
+
+/* =====================================================================
+   THÈME DOODLE — Hub d'accueil « My Arcade »
+   ===================================================================== */
+.hub {
+  --paper: #fff8ec;
+  --coral: #ff6b6b;
+  --turq: #3ec9c0;
+  --sun: #ffd23e;
+  --grape: #9b7ede;
+  --lime: #8ed05a;
+  --bubble: #ff9ec8;
+  --sky: #57b6ef;
+  --tang: #ff9f43;
+  --dood-shadow: 4px 4px 0 var(--ink);
+  --dood-shadow-sm: 3px 3px 0 var(--ink);
+
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  color: var(--ink);
+  background-color: var(--paper);
+  /* motif doodle carrelé + quelques taches de couleur — tout en fond défilant
+     (plus de couche position:fixed → défilement bien plus fluide sur mobile) */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cg fill='none' stroke='%232b2440' stroke-width='2.4' stroke-linecap='round' opacity='0.06'%3E%3Cpath d='M30 60 q10 -14 20 0 q10 14 20 0'/%3E%3Cpath d='M230 40 l6 12 13 2 -9 9 2 13 -12 -6 -12 6 2 -13 -9 -9 13 -2z'/%3E%3Ccircle cx='150' cy='120' r='10'/%3E%3Cpath d='M60 200 q14 -16 28 0 t28 0'/%3E%3Cpath d='M250 210 l5 10 11 1 -8 8 2 11 -10 -5 -10 5 2 -11 -8 -8 11 -1z'/%3E%3Cpath d='M200 150 q8 -10 16 0 q8 10 16 0'/%3E%3Cpath d='M40 130 l4 9 10 1 -7 7 2 10 -9 -5 -9 5 2 -10 -7 -7 10 -1z'/%3E%3Cpath d='M120 250 q10 -12 20 0 t20 0'/%3E%3Ccircle cx='270' cy='120' r='7'/%3E%3Ccircle cx='95' cy='40' r='6'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(circle at 12% 8%, rgba(255,210,62,.22) 0 7px, transparent 8px),
+    radial-gradient(circle at 82% 6%, rgba(62,201,192,.20) 0 6px, transparent 7px),
+    radial-gradient(circle at 22% 40%, rgba(155,126,222,.15) 0 6px, transparent 7px),
+    radial-gradient(circle at 90% 52%, rgba(142,208,90,.16) 0 6px, transparent 7px),
+    radial-gradient(circle at 40% 70%, rgba(255,107,107,.15) 0 5px, transparent 6px),
+    radial-gradient(circle at 78% 88%, rgba(87,182,239,.16) 0 6px, transparent 7px);
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 300px 300px, auto, auto, auto, auto, auto, auto;
+  padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 90px);
+}
+.hub > * { max-width: 440px; margin-left: auto; margin-right: auto; }
+
+.hub-close {
+  display: block;
+  margin: 0 auto 4px;
+  font-family: "Patrick Hand", cursive;
+  font-size: .95rem;
+  background: #fff;
+  border: 2.5px solid var(--ink);
+  border-radius: 40px;
+  padding: 6px 16px;
+  box-shadow: var(--dood-shadow-sm);
+  cursor: pointer;
+  transform: rotate(-1deg);
+}
+.hub-close:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+
+/* --- En-tête / logo sticker --- */
+.hub-head { text-align: center; margin: 6px 0 14px; }
+.hub .logo {
+  display: inline-block; position: relative;
+  font-family: "Fredoka", sans-serif; font-weight: 700;
+  font-size: 30px; line-height: 1; letter-spacing: .5px;
+  padding: 14px 22px 12px; color: #fff;
+  background: var(--grape);
+  border: 3px solid var(--ink); border-radius: 22px 24px 20px 26px;
+  box-shadow: var(--dood-shadow); transform: rotate(-2deg);
+  text-shadow: 2px 2px 0 rgba(0,0,0,.2);
+}
+.hub .logo .big { display: block; font-size: 52px; line-height: .86; margin-top: 2px; }
+.hub .logo .big b:nth-child(1) { color: var(--sun); }
+.hub .logo .big b:nth-child(2) { color: var(--turq); }
+.hub .logo .big b:nth-child(3) { color: var(--coral); }
+.hub .logo .big b:nth-child(4) { color: var(--bubble); }
+.hub .logo .big b:nth-child(5) { color: var(--lime); }
+.hub .logo .big b:nth-child(6) { color: #fff; }
+.hub .logo .joy { position: absolute; top: -16px; right: -14px; font-size: 26px; transform: rotate(14deg); }
+.hub .tagline {
+  font-family: "Patrick Hand", cursive; font-size: 18px;
+  margin-top: 14px; opacity: .85; transform: rotate(-1deg); color: var(--ink);
+}
+.hub .streak {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+  font-family: "Patrick Hand", cursive; font-size: 15px; color: var(--ink);
+  background: #fff; border: 2.5px solid var(--ink); border-radius: 40px;
+  padding: 5px 14px; box-shadow: var(--dood-shadow-sm); transform: rotate(1deg);
+  text-shadow: none;
+}
+
+/* --- Difficulté (doodle) --- */
+.hub-diff { margin: 18px 0 4px; }
+.hub .diff-title {
+  font-family: "Patrick Hand", cursive; font-size: 17px; display: block; margin: 0 2px 8px;
+}
+.hub .diff-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0; }
+.hub .diff-btn {
+  border: 2.5px solid var(--ink);
+  background: #fff; color: var(--ink);
+  border-radius: 14px; padding: 9px 2px;
+  font-family: "Fredoka", sans-serif; font-weight: 600; font-size: .82rem;
+  box-shadow: var(--dood-shadow-sm); cursor: pointer; transition: transform .1s ease;
+}
+.hub .diff-btn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+.hub .diff-btn.active { background: var(--sun); }
+.hub .diff-btn.xtreme.active { background: var(--coral); color: #fff; }
+
+/* --- Titres de sections --- */
+.hub .section-label {
+  font-family: "Patrick Hand", cursive; font-size: 19px; margin: 22px 2px 11px;
+  display: flex; align-items: center; gap: 9px;
+}
+.hub .section-label::after {
+  content: ""; flex: 1; height: 3px; border-radius: 3px;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 15px); opacity: .32;
+}
+
+/* --- Grille de tuiles --- */
+.hub .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 13px; }
+.hub .tile {
+  position: relative; border: 3px solid var(--ink); border-radius: 19px;
+  padding: 14px 12px 12px; box-shadow: var(--dood-shadow); background: #fff;
+  cursor: pointer; transition: transform .12s ease, box-shadow .12s ease;
+  min-height: 116px; display: flex; flex-direction: column; align-items: flex-start;
+  font-family: "Fredoka", sans-serif; text-align: left; color: var(--ink);
+}
+.hub .tile:active { transform: translate(3px,3px) rotate(0) !important; box-shadow: 1px 1px 0 var(--ink); }
+.hub .tile .t-emoji { font-size: 36px; line-height: 1; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.22)); }
+.hub .tile .t-name { margin: 9px 0 1px; font-size: 18px; font-weight: 600; }
+.hub .tile .t-desc { font-family: "Patrick Hand", cursive; font-size: 13px; line-height: 1.12; opacity: .8; }
+.hub .tile .badge {
+  position: absolute; top: -11px; right: -7px; font-family: "Patrick Hand", cursive; font-size: 11px;
+  background: var(--coral); color: #fff; padding: 2px 9px; border-radius: 20px;
+  transform: rotate(6deg); border: 2px solid var(--paper);
+}
+.hub .tile.soon { opacity: .96; }
+.hub .tile.soon .badge { background: var(--grape); }
+.hub .tile .pin { position: absolute; top: 11px; right: 12px; width: 13px; height: 13px; border-radius: 50%; border: 2.5px solid var(--ink); }
+.hub .c1 { background: var(--coral); } .hub .c2 { background: var(--turq); } .hub .c3 { background: var(--sun); }
+.hub .c4 { background: var(--grape); } .hub .c5 { background: var(--lime); } .hub .c6 { background: var(--bubble); }
+.hub .c7 { background: var(--sky); } .hub .c8 { background: var(--tang); }
+.hub .grid .tile:nth-child(4n+1) { transform: rotate(-1.5deg); }
+.hub .grid .tile:nth-child(4n+2) { transform: rotate(1.3deg); }
+.hub .grid .tile:nth-child(4n+3) { transform: rotate(1.1deg); }
+.hub .grid .tile:nth-child(4n+4) { transform: rotate(-1.2deg); }
+
+.hub-foot { text-align: center; margin-top: 22px; font-family: "Patrick Hand", cursive; font-size: 14px; opacity: .55; }
+
+/* --- Dock du bas --- */
+.hub .dock {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + 14px);
+  width: min(320px, calc(100% - 40px));
+  display: flex; justify-content: space-around; align-items: center;
+  background: #fff; border: 3px solid var(--ink); border-radius: 40px;
+  padding: 9px 8px; box-shadow: var(--dood-shadow); z-index: 2;
+}
+.hub .dock-btn {
+  font-family: "Fredoka"; font-size: 23px; background: none; border: none; cursor: pointer;
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; transition: .12s;
+}
+.hub .dock-btn.active { background: var(--sun); border: 2.5px solid var(--ink); }
+.hub .dock-btn:active { transform: scale(.9); }
+
+/* --- Petit message éphémère (toast) --- */
+.toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%);
+  z-index: 80; background: var(--ink); color: #fff;
+  font-family: "Fredoka", sans-serif; font-weight: 500; font-size: .95rem;
+  padding: 11px 18px; border-radius: 40px; box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  border: 2.5px solid #fff; animation: toastIn .25s ease;
+}
+@keyframes toastIn { from { transform: translate(-50%, 10px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+/* --- Accents doodle légers sur la vue de jeu (cohérence visuelle) --- */
+.bin { border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 rgba(31,36,64,.85); }
+.icon-btn { border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 rgba(31,36,64,.55); }
+
+/* --- Listes Trophées / Réglages (modales) --- */
+.tro-list, .set-list { display: flex; flex-direction: column; gap: 8px; text-align: left; margin-top: 6px; max-height: 46vh; overflow-y: auto; }
+.tro-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: #f6f5fb; border: 2px solid #e4e2ee; border-radius: 12px; padding: 9px 12px; font-size: .92rem;
+}
+.tro-row b { color: var(--accent); }
+.set-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: #f6f5fb; border: 2px solid #e4e2ee; border-radius: 12px; padding: 11px 12px;
+  font-family: inherit; font-size: .95rem; color: var(--ink); cursor: pointer; text-align: left;
+}
+.set-row:active { transform: scale(0.98); }
+.set-row.danger { background: #fff0f1; border-color: #ffd4d8; color: var(--bad); }
+
+/* =====================================================================
+   HÔTE des mini-jeux (arcade)
+   ===================================================================== */
+.arcade {
+  --ink: #2b2440; --paper: #fff8ec;
+  --coral:#ff6b6b; --turq:#3ec9c0; --sun:#ffd23e; --grape:#9b7ede;
+  --lime:#8ed05a; --bubble:#ff9ec8; --sky:#57b6ef; --tang:#ff9f43;
+  position: fixed; inset: 0; z-index: 48;
+  display: flex; flex-direction: column;
+  background-color: var(--paper);
+  color: var(--ink);
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(255,210,62,.22) 0 6px, transparent 7px),
+    radial-gradient(circle at 85% 14%, rgba(62,201,192,.18) 0 6px, transparent 7px),
+    radial-gradient(circle at 78% 84%, rgba(255,158,200,.16) 0 5px, transparent 6px),
+    radial-gradient(circle at 18% 76%, rgba(155,126,222,.15) 0 6px, transparent 7px);
+  padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px);
+  font-family: "Fredoka", system-ui, sans-serif;
+}
+.ar-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex: 0 0 auto;
+}
+.ar-back {
+  font-family: "Fredoka"; font-size: 1.3rem; font-weight: 600;
+  width: 46px; height: 46px; flex: 0 0 auto;
+  background: #fff; border: 3px solid var(--ink); border-radius: 14px;
+  box-shadow: 3px 3px 0 var(--ink); cursor: pointer; display: grid; place-items: center;
+}
+.ar-back:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+.ar-title { font-size: 1.15rem; font-weight: 700; flex: 1; }
+.ar-status {
+  font-family: "Patrick Hand", cursive; font-size: 1rem; text-align: right;
+  min-width: 0; white-space: nowrap;
+}
+.ar-board {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  border: 3px solid var(--ink); border-radius: 20px; background: #fffdf7;
+  box-shadow: 4px 4px 0 var(--ink);
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+/* utilitaires doodle proposés aux jeux (facultatif) */
+.ar-board .ar-btn {
+  font-family: "Fredoka"; font-weight: 600; font-size: 1rem;
+  background: var(--sun); color: var(--ink);
+  border: 3px solid var(--ink); border-radius: 14px; padding: 10px 18px;
+  box-shadow: 3px 3px 0 var(--ink); cursor: pointer;
+}
+.ar-board .ar-btn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+.ar-overlay {
+  position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; text-align: center;
+  background: rgba(255,248,236,.86); padding: 20px;
+}
+.ar-overlay h2 { margin: 0; font-size: 1.6rem; }
+.ar-overlay p { margin: 0; font-family: "Patrick Hand", cursive; font-size: 1.1rem; }
+canvas { touch-action: none; }
+
