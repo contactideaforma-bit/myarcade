@@ -141,11 +141,16 @@
       /* ================= Styles ================= */
       const style = document.createElement("style");
       style.textContent = `
-        .pk-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-          font-family:Fredoka,system-ui,sans-serif;color:${C.ink};overflow:hidden;background:#123043;}
+        .pk-wrap{position:absolute;inset:0;font-family:Fredoka,system-ui,sans-serif;color:${C.ink};
+          overflow:hidden;background:#123043;--u:3.9px;}
         .pk-wrap::before{content:'';position:absolute;inset:-30px;background:url('assets/park/bg.jpg') center/cover;
           filter:blur(22px) brightness(.72) saturate(1.1);}
-        .pk-park{position:relative;width:100%;aspect-ratio:768/1344;max-height:100%;
+        /* couche de défilement : sert uniquement quand le parc ne tient pas
+           en hauteur (téléphone en paysage, fenêtre très basse) */
+        .pk-scroll{position:absolute;inset:0;display:flex;overflow:auto;-webkit-overflow-scrolling:touch;}
+        /* dimensions posées en px par layout() : aspect-ratio + max-height déforment
+           la boîte quand la largeur est explicite, ce qui décalerait les 9 cadres */
+        .pk-park{position:relative;margin:auto;flex:0 0 auto;overflow:hidden;
           background:url('assets/park/bg.jpg') center/100% 100% no-repeat;user-select:none;-webkit-user-select:none;}
         .pk-a{position:absolute;box-sizing:border-box;}
 
@@ -154,11 +159,11 @@
           background:linear-gradient(180deg,#fffdf5,#ffeec9);border:3px solid ${C.ink};
           box-shadow:0 4px 0 ${C.ink},0 8px 18px rgba(0,0,0,.25);
           display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:2px 8px;}
-        .pk-tok{font-weight:700;line-height:1;font-size:clamp(15px,5.2vw,26px);white-space:nowrap;}
-        .pk-rate{font-family:'Patrick Hand',cursive;font-size:clamp(10px,3.2vw,15px);opacity:.8;line-height:1;}
+        .pk-tok{font-weight:700;line-height:1;font-size:max(13px,calc(var(--u)*5.2));white-space:nowrap;}
+        .pk-rate{font-family:'Patrick Hand',cursive;font-size:max(9px,calc(var(--u)*3.2));opacity:.8;line-height:1;}
         .pk-row2{display:flex;align-items:center;gap:6px;line-height:1;}
-        .pk-note{font-size:clamp(9px,2.9vw,14px);letter-spacing:-1px;}
-        .pk-chip{font-size:clamp(9px,2.8vw,13px);font-weight:600;background:#fff;border:2px solid ${C.ink};
+        .pk-note{font-size:max(9px,calc(var(--u)*2.9));letter-spacing:calc(var(--u)*-.25);}
+        .pk-chip{font-size:max(9px,calc(var(--u)*2.8));font-weight:600;background:#fff;border:2px solid ${C.ink};
           border-radius:12px;padding:1px 7px;box-shadow:1px 2px 0 ${C.ink};white-space:nowrap;}
         .pk-chip.btn{cursor:pointer;background:${C.sun};}
         .pk-chip.btn:active{transform:translateY(2px);box-shadow:0 0 0 ${C.ink};}
@@ -167,12 +172,12 @@
 
         /* --- Scène (zone de tap + visiteurs + pièces) --- */
         .pk-scene{left:0;right:0;top:15%;height:33%;cursor:pointer;}
-        .pk-vis{position:absolute;font-size:clamp(13px,4vw,22px);will-change:transform;
+        .pk-vis{position:absolute;font-size:max(12px,calc(var(--u)*4));will-change:transform;
           filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));pointer-events:none;}
         @keyframes pkWalk{from{left:-12%;}to{left:106%;}}
         @keyframes pkWalkR{from{left:106%;}to{left:-12%;}}
         .pk-taphint{position:absolute;left:50%;top:56%;transform:translateX(-50%);
-          font-family:'Patrick Hand',cursive;font-size:clamp(11px,3.4vw,16px);color:#fff;
+          font-family:'Patrick Hand',cursive;font-size:max(10px,calc(var(--u)*3.4));color:#fff;
           background:rgba(43,36,64,.55);padding:2px 12px;border-radius:14px;white-space:nowrap;pointer-events:none;}
 
         /* --- Bandeau objectif --- */
@@ -180,7 +185,7 @@
           background:linear-gradient(180deg,#fffdf5,#fff2d6);border:3px solid ${C.ink};
           box-shadow:0 3px 0 ${C.ink};display:flex;align-items:center;justify-content:center;
           padding:0 8px;text-align:center;overflow:hidden;}
-        .pk-goal span{font-size:clamp(9px,2.9vw,14px);font-weight:600;line-height:1.05;}
+        .pk-goal span{font-size:max(9px,calc(var(--u)*2.9));font-weight:600;line-height:1.05;}
 
         /* --- Emplacements --- */
         .pk-slot{border:none;background:none;padding:0;cursor:pointer;border-radius:9px;overflow:hidden;
@@ -188,22 +193,22 @@
         .pk-slot:active{transform:scale(.94);}
         .pk-slot img{width:100%;height:100%;object-fit:cover;display:block;}
         .pk-slot .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-          flex-direction:column;gap:1px;font-size:clamp(14px,4.4vw,24px);}
-        .pk-slot .ph small{font-family:'Patrick Hand',cursive;font-size:clamp(8px,2.4vw,12px);font-weight:700;}
+          flex-direction:column;gap:1px;font-size:max(13px,calc(var(--u)*4.4));}
+        .pk-slot .ph small{font-family:'Patrick Hand',cursive;font-size:max(8px,calc(var(--u)*2.4));font-weight:700;}
         .pk-lock{background:rgba(30,24,45,.55);color:#fff;}
         .pk-new{background:rgba(255,255,255,.35);color:${C.ink};
           box-shadow:inset 0 0 0 3px ${C.lime};animation:pkGlow 1.1s ease-in-out infinite;}
         @keyframes pkGlow{50%{box-shadow:inset 0 0 0 3px ${C.lime},0 0 14px 3px rgba(142,208,90,.9);}}
         .pk-badge{position:absolute;left:2px;bottom:2px;background:${C.ink};color:#fff;
-          font-size:clamp(7px,2.2vw,11px);font-weight:600;border-radius:8px;padding:0 5px;line-height:1.5;
+          font-size:max(7px,calc(var(--u)*2.2));font-weight:600;border-radius:calc(var(--u)*2);padding:0 5px;line-height:1.5;
           box-shadow:0 1px 3px rgba(0,0,0,.4);}
-        .pk-stars{position:absolute;right:2px;bottom:2px;font-size:clamp(6px,1.9vw,10px);
+        .pk-stars{position:absolute;right:2px;bottom:2px;font-size:max(6px,calc(var(--u)*1.9));
           letter-spacing:-1px;text-shadow:0 1px 2px rgba(0,0,0,.6);}
-        .pk-chefb{position:absolute;left:2px;top:2px;font-size:clamp(8px,2.4vw,13px);
+        .pk-chefb{position:absolute;left:2px;top:2px;font-size:max(8px,calc(var(--u)*2.4));
           filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));}
-        .pk-up{position:absolute;right:2px;top:2px;width:clamp(11px,3.4vw,17px);height:clamp(11px,3.4vw,17px);
+        .pk-up{position:absolute;right:2px;top:2px;width:max(11px,calc(var(--u)*3.4));height:max(11px,calc(var(--u)*3.4));
           border-radius:50%;background:${C.lime};border:2px solid ${C.ink};
-          display:grid;place-items:center;font-size:clamp(7px,2.1vw,10px);font-weight:700;
+          display:grid;place-items:center;font-size:max(7px,calc(var(--u)*2.1));font-weight:700;
           animation:pkPulse 1s ease-in-out infinite;}
         .pk-max{position:absolute;inset:0;box-shadow:inset 0 0 0 3px ${C.sun};border-radius:9px;}
 
@@ -211,44 +216,50 @@
         .pk-act{left:4%;right:4%;top:91.4%;height:7.4%;border-radius:14px;cursor:pointer;
           background:linear-gradient(180deg,${C.lime},#79bd46);border:3px solid ${C.ink};
           box-shadow:0 4px 0 ${C.ink};display:flex;align-items:center;justify-content:center;gap:6px;
-          font-weight:700;font-size:clamp(10px,3.2vw,16px);color:${C.ink};padding:0 8px;white-space:nowrap;}
+          font-weight:700;font-size:max(10px,calc(var(--u)*3.2));color:${C.ink};padding:0 8px;white-space:nowrap;}
         .pk-act:active{transform:translateY(3px);box-shadow:0 1px 0 ${C.ink};}
         .pk-act.off{background:linear-gradient(180deg,#dcd7e6,#c4bed3);color:#7a7490;}
         .pk-act.party{background:linear-gradient(180deg,${C.sun},${C.tang});}
 
         /* --- Effets --- */
         .pk-pop{position:absolute;z-index:30;pointer-events:none;font-weight:700;color:#fff;
-          text-shadow:0 2px 0 ${C.ink},0 0 8px rgba(0,0,0,.5);font-size:clamp(12px,3.8vw,20px);
+          text-shadow:0 2px 0 ${C.ink},0 0 8px rgba(0,0,0,.5);font-size:max(12px,calc(var(--u)*3.8));
           transform:translate(-50%,-50%);animation:pkUp .8s ease forwards;}
         @keyframes pkUp{from{opacity:1;}to{opacity:0;transform:translate(-50%,-190%);}}
         .pk-coin{position:absolute;z-index:34;width:13%;aspect-ratio:1;border:none;background:none;cursor:pointer;
-          font-size:clamp(26px,9vw,46px);line-height:1;filter:drop-shadow(0 0 9px gold) drop-shadow(0 3px 4px rgba(0,0,0,.4));
+          font-size:max(24px,calc(var(--u)*9));line-height:1;filter:drop-shadow(0 0 9px gold) drop-shadow(0 3px 4px rgba(0,0,0,.4));
           animation:pkSpin 1.2s linear infinite;}
         @keyframes pkSpin{0%{transform:scale(1) rotate(-9deg);}50%{transform:scale(1.14) rotate(9deg);}100%{transform:scale(1) rotate(-9deg);}}
         .pk-toast{position:absolute;left:50%;top:24%;transform:translateX(-50%);z-index:40;
           background:${C.ink};color:#fff;font-weight:600;padding:8px 15px;border-radius:18px;
           border:2.5px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,.4);white-space:nowrap;
-          font-size:clamp(11px,3.2vw,15px);animation:pkToast 1.8s ease forwards;pointer-events:none;}
+          font-size:max(11px,calc(var(--u)*3.2));animation:pkToast 1.8s ease forwards;pointer-events:none;}
         @keyframes pkToast{0%{opacity:0;transform:translate(-50%,10px);}12%{opacity:1;transform:translateX(-50%);}80%{opacity:1;}100%{opacity:0;}}
         .pk-frz{position:absolute;left:50%;top:14.4%;transform:translateX(-50%);z-index:28;
           background:linear-gradient(135deg,${C.coral},${C.tang});color:#fff;font-weight:700;
           border:2.5px solid ${C.ink};border-radius:16px;padding:2px 12px;box-shadow:0 3px 0 ${C.ink};
-          font-size:clamp(10px,3vw,15px);white-space:nowrap;}
+          font-size:max(10px,calc(var(--u)*3));white-space:nowrap;}
+
+        .pk-rotate{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:45;
+          background:rgba(43,36,64,.85);color:#fff;border:2px solid #fff;border-radius:16px;
+          padding:5px 14px;font-size:13px;font-weight:600;white-space:nowrap;pointer-events:none;
+          box-shadow:0 4px 14px rgba(0,0,0,.45);}
 
         /* --- Overlays --- */
         .pk-ov{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
           background:rgba(20,14,32,.72);padding:14px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-        .pk-card{width:100%;max-width:330px;background:${C.paper};border:4px solid ${C.ink};border-radius:22px;
+        .pk-card{width:100%;max-width:min(94%,calc(var(--u)*90));background:${C.paper};
+          border:4px solid ${C.ink};border-radius:22px;
           box-shadow:0 8px 0 ${C.ink},0 16px 34px rgba(0,0,0,.4);padding:14px;text-align:center;
           display:flex;flex-direction:column;gap:9px;max-height:100%;overflow-y:auto;}
-        .pk-card h2{margin:0;font-size:1.25rem;}
-        .pk-card p{margin:0;font-family:'Patrick Hand',cursive;font-size:1rem;line-height:1.25;}
+        .pk-card h2{margin:0;font-size:max(17px,calc(var(--u)*5));}
+        .pk-card p{margin:0;font-family:'Patrick Hand',cursive;font-size:max(14px,calc(var(--u)*4));line-height:1.25;}
         .pk-thumb{width:100%;aspect-ratio:300/232;border:3px solid ${C.ink};border-radius:14px;
           object-fit:cover;box-shadow:0 3px 0 ${C.ink};}
         .pk-bar{height:11px;background:#e6e1f0;border:2px solid ${C.ink};border-radius:8px;overflow:hidden;}
         .pk-bar i{display:block;height:100%;background:linear-gradient(90deg,${C.turq},${C.lime});}
         .pk-btn{display:block;width:100%;box-sizing:border-box;font-family:Fredoka;font-weight:700;
-          font-size:.92rem;color:${C.ink};background:${C.sun};
+          font-size:max(13px,calc(var(--u)*3.7));color:${C.ink};background:${C.sun};
           border:3px solid ${C.ink};border-radius:14px;padding:9px 12px;box-shadow:0 4px 0 ${C.ink};cursor:pointer;}
         .pk-btn.neutral{background:#fff;}
         #pkSheet{display:flex;flex-direction:column;gap:9px;}
@@ -256,14 +267,14 @@
         .pk-btn.g{background:${C.lime};}
         .pk-btn.p{background:linear-gradient(135deg,${C.grape},${C.coral});color:#fff;}
         .pk-btn.off{background:#ded9e8;color:#8b85a0;box-shadow:0 4px 0 #b6b0c6;}
-        .pk-btn.sm{font-size:.8rem;padding:7px 9px;box-shadow:0 3px 0 ${C.ink};}
+        .pk-btn.sm{font-size:max(12px,calc(var(--u)*3.2));padding:7px 9px;box-shadow:0 3px 0 ${C.ink};}
         .pk-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
         .pk-perk{display:flex;align-items:center;gap:9px;background:#fff;border:3px solid ${C.ink};
           border-radius:14px;padding:7px 9px;box-shadow:0 3px 0 ${C.ink};text-align:left;}
-        .pk-perk .pe{font-size:22px;}
+        .pk-perk .pe{font-size:max(19px,calc(var(--u)*5.6));}
         .pk-perk .pm{flex:1;min-width:0;}
-        .pk-perk .pn{font-weight:600;font-size:.86rem;}
-        .pk-perk .pd{font-family:'Patrick Hand',cursive;font-size:.76rem;opacity:.82;line-height:1.15;}
+        .pk-perk .pn{font-weight:600;font-size:max(12px,calc(var(--u)*3.4));}
+        .pk-perk .pd{font-family:'Patrick Hand',cursive;font-size:max(11px,calc(var(--u)*3));opacity:.82;line-height:1.15;}
       `;
       board.appendChild(style);
 
@@ -271,7 +282,7 @@
       const wrap = document.createElement("div");
       wrap.className = "pk-wrap";
       wrap.innerHTML = `
-        <div class="pk-park" id="pkPark">
+        <div class="pk-scroll" id="pkScroll"><div class="pk-park" id="pkPark">
           <div class="pk-a pk-hud">
             <div class="pk-tok"><span id="pkTok">0</span> 🎟️</div>
             <div class="pk-rate"><span id="pkRate">0</span> 🎟️/s</div>
@@ -287,10 +298,12 @@
           </div>
           <div class="pk-a pk-goal"><span id="pkGoal">…</span></div>
           <div class="pk-a pk-act" id="pkAct">…</div>
-        </div>`;
+        </div></div>
+        <div class="pk-rotate" id="pkRot" hidden>📱 Tourne ton téléphone pour voir tout le parc</div>`;
       board.appendChild(wrap);
       const $ = (s) => wrap.querySelector(s);
-      const park = $("#pkPark"), scene = $("#pkScene"), hintEl = $("#pkHint");
+      const park = $("#pkPark"), scroller = $("#pkScroll"), scene = $("#pkScene"),
+            hintEl = $("#pkHint"), rotEl = $("#pkRot");
       const tokEl = $("#pkTok"), rateEl = $("#pkRate"), noteEl = $("#pkNote"),
             goldEl = $("#pkGold"), goalEl = $("#pkGoal"), actEl = $("#pkAct"),
             seasonEl = $("#pkSeason");
@@ -306,6 +319,35 @@
         park.appendChild(b);
         return { el: b, sig: "" };
       });
+
+      /* ================= Mise en page adaptative =================
+         Le parc garde EXACTEMENT le ratio de l'image (768×1344), sinon les 9
+         cadres se décalent. On le dimensionne donc en pixels :
+           - il occupe la largeur disponible, plafonnée à 560 px (tablette : une
+             colonne façon téléphone, centrée, plutôt qu'une image géante) ;
+           - s'il ne tient pas en hauteur, il rétrécit ;
+           - il ne descend jamais sous 300 px de large : en dessous (téléphone en
+             paysage) on laisse défiler verticalement plutôt que de tout miniaturiser.
+         --u vaut 1 % de la largeur du parc : toutes les tailles de texte en
+         dépendent, donc l'interface reste proportionnée à toute échelle. */
+      const RATIO = 1344 / 768, MAXW = 560, MINW = 300;
+      function layout() {
+        const W = scroller.clientWidth, H = scroller.clientHeight;
+        if (!W || !H) return;
+        let w = Math.min(W, MAXW);
+        if (w * RATIO > H) w = H / RATIO;
+        w = Math.max(w, Math.min(W, MINW));
+        const h = Math.round(w * RATIO);
+        park.style.width = Math.round(w) + "px";
+        park.style.height = h + "px";
+        wrap.style.setProperty("--u", (w / 100).toFixed(3) + "px");
+        rotEl.hidden = h <= H + 2;   // le parc déborde → on suggère le portrait
+      }
+      layout();
+      let ro = null;
+      if (window.ResizeObserver) { ro = new ResizeObserver(layout); ro.observe(board); }
+      window.addEventListener("resize", layout);
+      window.addEventListener("orientationchange", layout);
 
       /* ================= Effets visuels ================= */
       function pop(x, y, txt) {
@@ -626,7 +668,7 @@
         actEl.classList.toggle("party", party);
 
         if (sheetOv) drawSheet();
-        const st = "S" + save.season + " · " + fmt(perSec()) + "/s";
+        const st = fmt(perSec()) + " 🎟️/s";
         if (st !== lastStatus) { lastStatus = st; api.setStatus(st); }
       }
 
@@ -680,6 +722,9 @@
       api.onExit(() => {
         clearInterval(iv);
         document.removeEventListener("visibilitychange", onVis);
+        window.removeEventListener("resize", layout);
+        window.removeEventListener("orientationchange", layout);
+        if (ro) { ro.disconnect(); ro = null; }
         dropCoin();
         visitors.forEach((v) => v.remove()); visitors = [];
         persist();
