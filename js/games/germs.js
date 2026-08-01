@@ -113,13 +113,19 @@
           pointer-events:none;}
         .gm-fx{position:absolute;left:0;top:0;width:100%;height:100%;
           display:block;touch-action:none;background:transparent;}
+        /* Le bandeau du haut est PUREMENT informatif : aucun élément cliquable, sinon
+           le navigateur « aimante » les tapes voisines dessus et les microbes du haut
+           deviennent intapables. Les commandes sont en bas, sous le pouce. */
         .gm-hud{position:absolute;left:8px;right:8px;top:8px;z-index:4;
-          display:flex;flex-direction:column;align-items:center;gap:4px;
+          display:flex;justify-content:center;
           font-family:Fredoka,sans-serif;pointer-events:none;}
+        .gm-bar{position:absolute;left:8px;right:8px;bottom:10px;z-index:4;
+          display:flex;justify-content:center;align-items:center;gap:8px;
+          font-family:Fredoka,sans-serif;pointer-events:none;}
+        .gm-bar > *{pointer-events:auto;}
         .gm-name{font-weight:700;font-size:clamp(12px,3.4vw,16px);color:${C.ink};
           background:rgba(255,255,255,.86);border:2.5px solid ${C.ink};border-radius:14px;
           padding:2px 12px;box-shadow:0 3px 0 ${C.ink};white-space:nowrap;}
-        .gm-row{display:flex;gap:6px;align-items:center;pointer-events:auto;}
         .gm-chip{font-weight:700;font-size:clamp(11px,3.1vw,15px);color:${C.ink};
           background:rgba(255,255,255,.9);border:2.5px solid ${C.ink};border-radius:13px;
           padding:3px 10px;box-shadow:0 3px 0 ${C.ink};white-space:nowrap;}
@@ -168,15 +174,16 @@
 
       const hud = document.createElement("div");
       hud.className = "gm-hud";
-      hud.innerHTML = `<div class="gm-name" id="gmName">…</div>
-        <div class="gm-row">
-          <span class="gm-chip" id="gmCount">🦠 0/0</span>
-          <button class="gm-btn" id="gmHint">💡 3</button>
-          <button class="gm-btn" id="gmWide">🔍 vue</button>
-        </div>`;
+      hud.innerHTML = `<div class="gm-name" id="gmName">…</div>`;
       board.appendChild(hud);
-      const nameEl = hud.querySelector("#gmName"), countEl = hud.querySelector("#gmCount"),
-            hintBtn = hud.querySelector("#gmHint"), wideBtn = hud.querySelector("#gmWide");
+      const bar = document.createElement("div");
+      bar.className = "gm-bar";
+      bar.innerHTML = `<span class="gm-chip" id="gmCount">🦠 0/0</span>
+        <button class="gm-btn" id="gmHint">💡 3</button>
+        <button class="gm-btn" id="gmWide">🔍 vue</button>`;
+      board.appendChild(bar);
+      const nameEl = hud.querySelector("#gmName"), countEl = bar.querySelector("#gmCount"),
+            hintBtn = bar.querySelector("#gmHint"), wideBtn = bar.querySelector("#gmWide");
 
       /* ================= État ================= */
       let dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -202,10 +209,14 @@
         view.s = clamp(view.s, minS, maxS);
         clampView();
       }
+      // On laisse déborder de 65 % de la demi-vue : n'importe quel point de l'image
+      // peut ainsi être amené au CENTRE de l'écran, donc à l'écart des bandeaux.
+      // Sans ça, un microbe collé au bord haut restait coincé sous le bandeau.
+      const OVER = 0.35;
       function clampView() {
         const hw = W / 2 / view.s, hh = H / 2 / view.s;
-        view.x = hw * 2 >= room.w ? room.w / 2 : clamp(view.x, hw, room.w - hw);
-        view.y = hh * 2 >= room.h ? room.h / 2 : clamp(view.y, hh, room.h - hh);
+        view.x = hw * 2 >= room.w ? room.w / 2 : clamp(view.x, hw * OVER, room.w - hw * OVER);
+        view.y = hh * 2 >= room.h ? room.h / 2 : clamp(view.y, hh * OVER, room.h - hh * OVER);
       }
       const toScreen = (ix, iy) => ({ x: W / 2 + (ix - view.x) * view.s, y: H / 2 + (iy - view.y) * view.s });
       const toImage = (sx, sy) => ({ x: view.x + (sx - W / 2) / view.s, y: view.y + (sy - H / 2) / view.s });
@@ -262,8 +273,13 @@
         const rnd = rngFor(n * 7919 + 13);
         const count = COUNT(n), size = SIZE(n) * room.w, bias = BIAS(n), camo = CAMO(n);
 
+        // Bande interdite en haut : c'est là que s'affichent le nom du niveau et les
+        // boutons. Un microbe placé là serait masqué par le bandeau et intapable
+        // (impossible de le faire descendre, le cadrage bute sur le haut de l'image).
+        const yMin = Math.max(size * 0.6, room.h * 0.085);
         const cells = [];
         for (let j = 0; j < room.rows; j++) {
+          if ((j + 1) * (room.h / room.rows) < yMin) continue;
           for (let i = 0; i < room.cols; i++) {
             const c = +room.clutter[j][i];
             if (n >= 4 && c <= 1) continue;            // à partir du niveau 5 : plus rien sur le mur nu
@@ -281,7 +297,7 @@
             while (pick > cells[ci].wgt && ci < cells.length - 1) { pick -= cells[ci].wgt; ci++; }
             const c = cells[ci];
             px = clamp((c.i + rnd()) * cw, size * 0.6, room.w - size * 0.6);
-            py = clamp((c.j + rnd()) * ch, size * 0.6, room.h - size * 0.6);
+            py = clamp((c.j + rnd()) * ch, yMin, room.h - size * 0.6);
             ok = true;
             for (const b of bugs) if (Math.hypot(px - b.x, py - b.y) < size * 2.2) { ok = false; break; }
           }
@@ -315,12 +331,16 @@
 
       /* ================= Interactions ================= */
       const pointers = new Map();
-      let pinch = null, dragged = false, downT = 0, downPt = null;
+      let pinch = null, dragged = false, downT = 0, downPt = null, lastTouchT = 0;
       let lastTap = { t: 0, x: 0, y: 0 };
       const evPos = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
 
       function onDown(e) {
         if (!playing || !ready) return;
+        // Après un toucher, le navigateur rejoue l'évènement en « souris » ~15 ms plus
+        // tard. On l'ignore, sinon chaque tape est comptée deux fois.
+        if (e.pointerType === "mouse") { if (performance.now() - lastTouchT < 900) return; }
+        else lastTouchT = performance.now();
         try { canvas.setPointerCapture(e.pointerId); } catch (x) {}
         pointers.set(e.pointerId, evPos(e));
         if (pointers.size === 1) { dragged = false; downT = performance.now(); downPt = evPos(e); tween = null; }
@@ -350,6 +370,7 @@
       }
       function onUp(e) {
         if (!pointers.has(e.pointerId)) return;
+        e.preventDefault();
         const p = pointers.get(e.pointerId);
         pointers.delete(e.pointerId);
         if (pointers.size < 2) pinch = null;
@@ -571,7 +592,8 @@
           ctx.lineWidth = 4 * uiS; ctx.textAlign = "center";
           ctx.font = "600 " + Math.round(15 * uiS) + "px Fredoka, sans-serif";
           const msg = "Pince pour zoomer · les microbes sont minuscules";
-          ctx.strokeText(msg, W / 2, H - 22 * uiS); ctx.fillText(msg, W / 2, H - 22 * uiS);
+          const my = H - 52 * uiS;
+          ctx.strokeText(msg, W / 2, my); ctx.fillText(msg, W / 2, my);
           ctx.globalAlpha = 1;
         }
       }
