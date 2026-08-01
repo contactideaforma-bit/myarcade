@@ -111,7 +111,8 @@
         /* le décor est composé par le GPU : le zoom ne coûte rien par image */
         .gm-room{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;
           pointer-events:none;}
-        .gm-fx{position:absolute;inset:0;display:block;touch-action:none;background:transparent;}
+        .gm-fx{position:absolute;left:0;top:0;width:100%;height:100%;
+          display:block;touch-action:none;background:transparent;}
         .gm-hud{position:absolute;left:8px;right:8px;top:8px;z-index:4;
           display:flex;flex-direction:column;align-items:center;gap:4px;
           font-family:Fredoka,sans-serif;pointer-events:none;}
@@ -314,7 +315,8 @@
 
       /* ================= Interactions ================= */
       const pointers = new Map();
-      let pinch = null, dragged = false, downT = 0, downPt = null, lastTap = 0;
+      let pinch = null, dragged = false, downT = 0, downPt = null;
+      let lastTap = { t: 0, x: 0, y: 0 };
       const evPos = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
 
       function onDown(e) {
@@ -353,8 +355,12 @@
         if (pointers.size < 2) pinch = null;
         if (pointers.size === 0 && !dragged && performance.now() - downT < 400) {
           const now = performance.now();
-          if (now - lastTap < 300) { zoomAt(p, 2.2); clampView(); applyView(); lastTap = 0; }
-          else { lastTap = now; tap(p); }
+          // Double-tap = zoom, mais SEULEMENT deux tapes rapprochées au même endroit.
+          // Sinon, nettoyer deux microbes voisins coup sur coup zoomait au lieu
+          // d'attraper le second.
+          const near = Math.hypot(p.x - lastTap.x, p.y - lastTap.y) < 32;
+          if (now - lastTap.t < 300 && near) { zoomAt(p, 2.2); clampView(); applyView(); lastTap.t = 0; }
+          else { lastTap = { t: now, x: p.x, y: p.y }; tap(p); }
         }
       }
       function zoomAt(pt, factor) {
@@ -380,7 +386,10 @@
         for (const b of bugs) {
           if (b.found) continue;
           const d = Math.hypot(p.x - b.x, p.y - b.y);
-          const tol = Math.max(b.r * 0.95, 16 / view.s);
+          // Tolérance : confortable au doigt une fois zoomé, mais PLAFONNÉE à 3× le
+          // rayon du microbe. Sans ce plafond, à 22 microbes par niveau la cible
+          // devenait si large en vue d'ensemble que tapoter au hasard payait.
+          const tol = Math.max(b.r * 1.1, Math.min(b.r * 3, 13 / view.s));
           if (d < tol && d < bd) { bd = d; best = b; }
         }
         if (best) hit(best); else miss(p);
@@ -394,6 +403,7 @@
                     life: 1, r: b.r * (0.18 + Math.random() * 0.22), col: FXC[(Math.random() * 4) | 0] });
         }
         api.soundGood(); api.beep(720, 0.06, "triangle", 0.06); api.vibrate([8, 20, 10]);
+        lastTap.t = 0;
         dirty = true; updateHud(true);
         if (found >= bugs.length) doneTimer = setTimeout(levelDone, 450);
       }
@@ -576,6 +586,10 @@
           get level() { return level; }, get found() { return found; }, get room() { return room; },
           get minS() { return minS; }, get maxS() { return maxS; },
           tapImage(ix, iy) { tap(toScreen(ix, iy)); },
+          screenOf(ix, iy) { const r = canvas.getBoundingClientRect(), p = toScreen(ix, iy);
+                             return { x: r.left + p.x, y: r.top + p.y }; },
+          get canvasBox() { const r = canvas.getBoundingClientRect();
+                            return { w: Math.round(r.width), h: Math.round(r.height) }; },
         };
       }
 
