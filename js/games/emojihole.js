@@ -138,6 +138,20 @@
       board.appendChild(hud);
       const nameEl = hud.querySelector("#hlName"), barEl = hud.querySelector("#hlBar"), metaEl = hud.querySelector("#hlMeta");
 
+      /* ---------- Sprites pré-rendus pour le rendu (perf) ----------
+         Avant : ~200 fillRect pour le damier + 2 dégradés radiaux créés
+         à CHAQUE image. Maintenant : 3 drawImage. */
+      function radialSprite(stops, inner, cx, cy) {
+        const S = 256, c = document.createElement("canvas"); c.width = c.height = S;
+        const x = c.getContext("2d");
+        const g = x.createRadialGradient(S / 2 + (cx || 0) * S, S / 2 + (cy || 0) * S, (S / 2) * inner, S / 2, S / 2, S / 2);
+        stops.forEach((st) => g.addColorStop(st[0], st[1]));
+        x.fillStyle = g; x.beginPath(); x.arc(S / 2, S / 2, S / 2, 0, 7); x.fill();
+        return c;
+      }
+      const glowCv = radialSprite([[0, "rgba(30,22,48,.30)"], [1, "rgba(30,22,48,0)"]], 0.414);
+      const bodyCv = radialSprite([[0, "#08080f"], [0.72, "#181428"], [1, "#3a3358"]], 0.12, -0.1, -0.11);
+
       /* ================= Sprites emoji (pré-rendus) ================= */
       const cache = {};
       function sprite(emoji, px) {
@@ -429,12 +443,17 @@
         ctx.save();
         ctx.translate(W / 2, H / 2); ctx.scale(zoom, zoom); ctx.translate(-cam.x, -cam.y);
 
-        // sol du niveau + damier léger (donne l'échelle quand on dézoome)
+        // sol + damier : seules les cases VISIBLES sont peintes (au début on
+        // ne voit que ~4 cases sur 196 ; avant, les 196 étaient peintes)
         ctx.fillStyle = theme.ground;
         ctx.fillRect(0, 0, world, world);
         const cell = world / 14;
-        ctx.fillStyle = theme.dark ? "rgba(255,255,255,.035)" : "rgba(43,36,64,.035)";
-        for (let i = 0; i < 14; i++) for (let j = 0; j < 14; j++) if ((i + j) & 1) ctx.fillRect(i * cell, j * cell, cell, cell);
+        const gi0 = Math.max(0, Math.floor((cam.x - W / 2 / zoom) / cell));
+        const gi1 = Math.min(13, Math.floor((cam.x + W / 2 / zoom) / cell));
+        const gj0 = Math.max(0, Math.floor((cam.y - H / 2 / zoom) / cell));
+        const gj1 = Math.min(13, Math.floor((cam.y + H / 2 / zoom) / cell));
+        ctx.fillStyle = theme.dark ? "rgba(255,255,255,.045)" : "rgba(43,36,64,.045)";
+        for (let i = gi0; i <= gi1; i++) for (let j = gj0; j <= gj1; j++) if ((i + j) & 1) ctx.fillRect(i * cell, j * cell, cell, cell);
         ctx.strokeStyle = theme.dark ? "rgba(255,255,255,.25)" : "rgba(43,36,64,.35)";
         ctx.lineWidth = 6 / zoom; ctx.strokeRect(0, 0, world, world);
 
@@ -465,12 +484,8 @@
 
         // le trou
         const R = hole.r * (1 + 0.16 * Math.max(0, hole.pulse));
-        const og = ctx.createRadialGradient(hole.x, hole.y, R * 0.6, hole.x, hole.y, R * 1.45);
-        og.addColorStop(0, "rgba(30,22,48,.30)"); og.addColorStop(1, "rgba(30,22,48,0)");
-        ctx.fillStyle = og; ctx.beginPath(); ctx.arc(hole.x, hole.y, R * 1.45, 0, 7); ctx.fill();
-        const bg = ctx.createRadialGradient(hole.x - R * 0.2, hole.y - R * 0.22, R * 0.12, hole.x, hole.y, R);
-        bg.addColorStop(0, "#08080f"); bg.addColorStop(0.72, "#181428"); bg.addColorStop(1, "#3a3358");
-        ctx.beginPath(); ctx.arc(hole.x, hole.y, R, 0, 7); ctx.fillStyle = bg; ctx.fill();
+        ctx.drawImage(glowCv, hole.x - R * 1.45, hole.y - R * 1.45, R * 2.9, R * 2.9);
+        ctx.drawImage(bodyCv, hole.x - R, hole.y - R, R * 2, R * 2);
         ctx.save();
         ctx.translate(hole.x, hole.y); ctx.rotate(hole.ang);
         ctx.strokeStyle = C.ink; ctx.lineWidth = 3.5 / zoom;

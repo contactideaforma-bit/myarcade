@@ -1,45 +1,60 @@
 /* =========================================================
-   Désinfecte ta chambre — jeu d'objets cachés (v1)
+   Désinfecte ta chambre — jeu d'objets cachés (v2)
 
-   On cherche des microbes cachés dans une chambre d'enfant :
-   pincer pour zoomer, glisser pour se déplacer, taper pour
-   désinfecter. Quand la chambre est propre, niveau suivant.
+   v2 : microbes BEAUCOUP plus petits et camouflés, 5 chambres,
+   et un rendu réorganisé pour la fluidité.
 
-   Aucun échec possible : le temps ne sert qu'à donner 1 à 3 ⭐.
-
-   Trois choix structurants :
-   1) CAMÉRA ZOOM/PAN sur l'image de la chambre. Tout est en
-      coordonnées IMAGE, converties à l'affichage (`toScreen`).
-   2) TOLÉRANCE DE CLIC EN PIXELS ÉCRAN : le rayon de détection
-      vaut au moins ~18 px à l'écran, donc il RÉTRÉCIT dans
-      l'image quand on dézoome. Taper au hasard en vue d'ensemble
-      ne marche pas — il faut vraiment zoomer.
-   3) CARTE D'ENCOMBREMENT par chambre (`clutter`, calculée hors
-      ligne sur l'image) : plus le niveau monte, plus les microbes
-      sont placés dans les zones chargées (le tas de peluches
-      plutôt que le plafond nu). Le placement est aussi tiré d'un
-      générateur PSEUDO-ALÉATOIRE GRAINÉ par le numéro de niveau →
-      un niveau donné est toujours identique, donc rejouable et
-      comparable en temps.
+   Quatre choix structurants :
+   1) LE DÉCOR EST UNE <img> TRANSFORMÉE EN CSS, pas un dessin
+      canvas. Le zoom/déplacement est donc composé par le GPU et
+      ne coûte rien par image. Le canvas ne dessine plus que les
+      microbes et les particules — et seulement quand quelque
+      chose a changé (drapeau `dirty`). Au repos : 0 dessin.
+   2) TAILLE EN FRACTION DE LA LARGEUR DE LA CHAMBRE (pas en
+      pixels), donc identique quel que soit le format du décor.
+      De 6,2 % au niveau 1 à 1,8 % au niveau 12 : à ce stade le
+      microbe fait ~7 px à l'écran en vue d'ensemble. Invisible
+      sans zoomer, c'est le but.
+   3) CAMOUFLAGE : au niveau 3 et au-delà, chaque microbe est
+      teinté vers la couleur du décor SOUS lui (échantillonnée
+      dans l'image) et pré-rendu une fois pour la partie.
+   4) TOLÉRANCE DE CLIC EN PIXELS ÉCRAN : elle rétrécit dans
+      l'image quand on dézoome → taper au hasard en vue
+      d'ensemble ne trouve rien. Ne pas remplacer par une
+      tolérance en pixels image, ça casserait le jeu.
    ========================================================= */
 (function () {
   const KEY = "arc_germs_v1";
   const BASE = "assets/germs/";
 
   const ROOMS = [
-    { id: "pastel", c1: "#907b77", c2: "#77564a", name: "Chambre pastel", emoji: "🛏️", w: 820, h: 1435, cols: 10, rows: 18,
-      clutter: ["0000000000", "0000100000", "0000100011", "0011221100", "0012120110", "1000015550", "3333423252", "3445413342", "1125613141", "0012615420", "3376536433", "3544647674", "4786747674", "3896457535", "5444342233", "1343345521", "1112223351", "0111114251"] },
-    { id: "licorne", c1: "#675856", c2: "#4d3d33", name: "Chambre licorne", emoji: "🦄", w: 820, h: 1435, cols: 10, rows: 18,
-      clutter: ["0000000000", "0000000000", "1000111000", "1221222221", "1232555522", "1123442611", "1113231621", "1212221511", "1212221521", "3235211555", "6346877586", "9855676586", "3353222467", "6545442444", "6665444444", "5665444444", "6555555555", "5545555555"] },
-    { id: "peluches", c1: "#9a7174", c2: "#69404c", name: "Chambre aux peluches", emoji: "🧸", w: 820, h: 1435, cols: 10, rows: 18,
-      clutter: ["0000021100", "0000000100", "2211000000", "3312111100", "2411222111", "1421223254", "1333322465", "1332212366", "1321211443", "4442232264", "4465455473", "5465656675", "3567776689", "5667686788", "5656325757", "6542235667", "3333223444", "3332222442"] },
-    { id: "superpose", c1: "#82657e", c2: "#7e5a68", name: "Chambre des lits superposés", emoji: "🪜", w: 820, h: 1054, cols: 10, rows: 13,
-      clutter: ["1044410000", "1243331111", "2442231354", "7752354466", "5565566667", "2333455446", "2321346232", "5544579898", "6664365566", "6766788555", "7779978766", "4777555785", "3452557753"] },
+    { id: "pastel", name: "Chambre pastel", emoji: "🛏️", c1: "#907b77", c2: "#77564a",
+      w: 768, h: 1344, cols: 10, rows: 18,
+      clutter: ["0000000000", "0000100000", "0000100011", "0011221100", "0012120110", "1000015550", "3333323252", "3445413342", "1125613141", "0012615420", "3376536433", "3544637674", "4786747674", "3896457535", "5444342233", "1343345521", "1112323351", "0111114251"] },
+    { id: "licorne", name: "Chambre licorne", emoji: "🦄", c1: "#675856", c2: "#4e3d34",
+      w: 768, h: 1344, cols: 10, rows: 18,
+      clutter: ["0000000000", "0000000000", "1000111000", "1221222221", "1232555522", "1123442611", "1113331621", "1212221511", "1212221511", "3235211555", "6346877586", "9855676586", "3353222467", "5545442444", "5664344444", "5555444444", "5554555545", "5445445555"] },
+    { id: "peluches", name: "Chambre aux peluches", emoji: "🧸", c1: "#9a7174", c2: "#6a404c",
+      w: 768, h: 1344, cols: 10, rows: 18,
+      clutter: ["0000021100", "0000000100", "2211000000", "3311111100", "2411222111", "1421223254", "1333322465", "1332212366", "1321211343", "4442232264", "4465455473", "5464656675", "3567776689", "5666676688", "5656325757", "6542225567", "3333223434", "3332222442"] },
+    { id: "superpose", name: "Chambre des lits superposés", emoji: "🪜", c1: "#81657e", c2: "#7e5a68",
+      w: 896, h: 1152, cols: 10, rows: 13,
+      clutter: ["1044410000", "1243331111", "2442231354", "6742354466", "5555566667", "2332455446", "2311346232", "5544578898", "6664365565", "6666788555", "6778877766", "4777555785", "3452556653"] },
+    { id: "volcan", name: "Chambre volcan", emoji: "🌋", c1: "#ae8473", c2: "#8c4136",
+      w: 1024, h: 1024, cols: 10, rows: 10,
+      clutter: ["0000000000", "3013333100", "5112132314", "3343424424", "3323682345", "7774875587", "7668349567", "6556444665", "3672213764", "1244434542"] },
   ];
   const BUGS = ["pink", "red", "greenoval", "blue", "greenrod", "yellow"];
 
-  const HINTS = 3;          // coups de loupe par niveau
   const HINT_COST = 8;      // secondes ajoutées au chrono des ⭐
+
+  // Difficulté — tout est réglable ici.
+  const COUNT = (n) => Math.min(30, 4 + Math.round(n * 1.6));
+  const SIZE  = (n) => Math.max(0.018, 0.062 - n * 0.004);   // diamètre, en fraction de la largeur
+  const CAMO  = (n) => Math.max(0, Math.min(0.42, (n - 2) * 0.05));
+  const BIAS  = (n) => Math.min(1, n / 4);                   // attirance vers les zones chargées
+  const PAR   = (n) => 12 + COUNT(n) * 4.5;
+  const HINTS = (n) => (COUNT(n) >= 18 ? 5 : 3);
 
   // pseudo-aléatoire grainé : un niveau donné a toujours la même disposition
   function rngFor(seed) {
@@ -75,13 +90,9 @@
       }
       function persist() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
       const save = load();
-
       const roomOf = (n) => ROOMS[n % ROOMS.length];
-      const countOf = (n) => Math.min(24, 3 + Math.round(n * 1.3));
-      const sizeOf = (n) => Math.max(46, 120 - n * 6);          // diamètre en pixels image
-      const parOf = (n) => 10 + countOf(n) * 3.5;
 
-      /* ================= Chargement des images ================= */
+      /* ================= Chargement ================= */
       const imgs = {}; let pending = 0, ready = false;
       function loadImg(key, src) {
         pending++;
@@ -92,16 +103,15 @@
       ROOMS.forEach((r) => loadImg("room_" + r.id, BASE + "rooms/" + r.id + ".jpg"));
       BUGS.forEach((b) => loadImg("bug_" + b, BASE + "bugs/" + b + ".png"));
 
-      /* ================= Canvas + HUD ================= */
-      let dpr = Math.min(2, window.devicePixelRatio || 1);
-      const canvas = document.createElement("canvas");
-      canvas.style.cssText = "width:100%;height:100%;display:block;touch-action:none;background:#20182e;";
-      board.appendChild(canvas);
-      const ctx = canvas.getContext("2d");
-
+      /* ================= DOM ================= */
       const style = document.createElement("style");
       style.textContent = `
         .ar-title{font-size:clamp(.88rem,3.7vw,1.15rem);}
+        .gm-stage{position:absolute;inset:0;overflow:hidden;}
+        /* le décor est composé par le GPU : le zoom ne coûte rien par image */
+        .gm-room{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;
+          pointer-events:none;}
+        .gm-fx{position:absolute;inset:0;display:block;touch-action:none;background:transparent;}
         .gm-hud{position:absolute;left:8px;right:8px;top:8px;z-index:4;
           display:flex;flex-direction:column;align-items:center;gap:4px;
           font-family:Fredoka,sans-serif;pointer-events:none;}
@@ -145,6 +155,16 @@
       `;
       board.appendChild(style);
 
+      const stage = document.createElement("div");
+      stage.className = "gm-stage";
+      const roomEl = document.createElement("img");
+      roomEl.className = "gm-room"; roomEl.alt = "";
+      const canvas = document.createElement("canvas");
+      canvas.className = "gm-fx";
+      stage.appendChild(roomEl); stage.appendChild(canvas);
+      board.appendChild(stage);
+      const ctx = canvas.getContext("2d");
+
       const hud = document.createElement("div");
       hud.className = "gm-hud";
       hud.innerHTML = `<div class="gm-name" id="gmName">…</div>
@@ -158,13 +178,13 @@
             hintBtn = hud.querySelector("#gmHint"), wideBtn = hud.querySelector("#gmWide");
 
       /* ================= État ================= */
+      let dpr = Math.min(2, window.devicePixelRatio || 1);
       let W = 0, H = 0, uiS = 1;
       let level = save.lvl, room = roomOf(level), bugs = [], found = 0;
-      let view = { s: 1, x: 0, y: 0 };            // s = px écran par px image ; x,y = point image au centre
-      let tween = null, minS = 1, maxS = 6;
-      let playing = false, elapsed = 0, hints = HINTS, penalty = 0;
+      let view = { s: 1, x: 0, y: 0 }, tween = null, minS = 1, maxS = 9;
+      let playing = false, elapsed = 0, hints = 3, penalty = 0;
       let fx = [], ring = null, hintT = 0;
-      let dead = false, doneTimer = 0;   // garde-fou : rien ne doit survivre à api.onExit
+      let dirty = true, dead = false, doneTimer = 0;
 
       function resize() {
         dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -172,12 +192,12 @@
         canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         uiS = clamp(Math.min(W, H) / 480, 0.7, 2);
-        recomputeLimits();
+        recomputeLimits(); applyView();
       }
       function recomputeLimits() {
         if (!room || !W || !H) return;
         minS = Math.min(W / room.w, H / room.h);
-        maxS = minS * 6;
+        maxS = minS * 9;
         view.s = clamp(view.s, minS, maxS);
         clampView();
       }
@@ -189,18 +209,64 @@
       const toScreen = (ix, iy) => ({ x: W / 2 + (ix - view.x) * view.s, y: H / 2 + (iy - view.y) * view.s });
       const toImage = (sx, sy) => ({ x: view.x + (sx - W / 2) / view.s, y: view.y + (sy - H / 2) / view.s });
 
+      // seule fonction qui bouge le décor : une transform CSS, composée par le GPU
+      function applyView() {
+        const o = toScreen(0, 0);
+        roomEl.style.transform = "translate3d(" + o.x.toFixed(1) + "px," + o.y.toFixed(1) + "px,0) scale(" + view.s.toFixed(4) + ")";
+        dirty = true;
+      }
+
+      /* ---------- Échantillonnage du décor (pour le camouflage) ---------- */
+      const sampCache = {};
+      function sampler(r) {
+        if (sampCache[r.id]) return sampCache[r.id];
+        const sw = 200, sh = Math.max(1, Math.round(200 * r.h / r.w));
+        const c = document.createElement("canvas"); c.width = sw; c.height = sh;
+        const x = c.getContext("2d", { willReadFrequently: true });
+        const im = imgs["room_" + r.id];
+        let d = null;
+        try { if (im && im.width) { x.drawImage(im, 0, 0, sw, sh); d = x.getImageData(0, 0, sw, sh).data; } } catch (e) { d = null; }
+        sampCache[r.id] = { sw, sh, d };
+        return sampCache[r.id];
+      }
+      function sampleAt(r, ix, iy) {
+        const s = sampler(r);
+        if (!s.d) return [200, 200, 200];
+        const px = clamp(Math.floor(ix / r.w * s.sw), 0, s.sw - 1);
+        const py = clamp(Math.floor(iy / r.h * s.sh), 0, s.sh - 1);
+        const i = (py * s.sw + px) * 4;
+        return [s.d[i], s.d[i + 1], s.d[i + 2]];
+      }
+      // sprite teinté, rendu UNE fois par microbe au début du niveau
+      function tinted(bugId, rgb, amount) {
+        const S = 128, c = document.createElement("canvas"); c.width = c.height = S;
+        const x = c.getContext("2d");
+        const g = imgs["bug_" + bugId];
+        if (g && g.width) x.drawImage(g, 0, 0, S, S);
+        if (amount > 0) {
+          x.globalCompositeOperation = "source-atop";
+          x.fillStyle = "rgba(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + "," + amount + ")";
+          x.fillRect(0, 0, S, S);
+        }
+        return c;
+      }
+
       /* ================= Construction d'un niveau ================= */
       function startLevel(n) {
         level = n; room = roomOf(n);
-        const rnd = rngFor(n * 7919 + 13);
-        const count = countOf(n), size = sizeOf(n), bias = Math.min(1, n / 8);
+        stage.style.background = "linear-gradient(180deg," + room.c1 + "," + room.c2 + ")";
+        roomEl.src = BASE + "rooms/" + room.id + ".jpg";
+        roomEl.style.width = room.w + "px"; roomEl.style.height = room.h + "px";
 
-        // tirage pondéré par l'encombrement : plus le niveau monte, plus on vise les zones chargées
+        const rnd = rngFor(n * 7919 + 13);
+        const count = COUNT(n), size = SIZE(n) * room.w, bias = BIAS(n), camo = CAMO(n);
+
         const cells = [];
         for (let j = 0; j < room.rows; j++) {
           for (let i = 0; i < room.cols; i++) {
             const c = +room.clutter[j][i];
-            cells.push({ i, j, wgt: 1 + bias * c * 2.2 });
+            if (n >= 4 && c <= 1) continue;            // à partir du niveau 5 : plus rien sur le mur nu
+            cells.push({ i, j, wgt: 1 + bias * c * 4 });
           }
         }
         const totW = cells.reduce((a, c) => a + c.wgt, 0);
@@ -209,26 +275,25 @@
         bugs = [];
         for (let k = 0; k < count; k++) {
           let px = 0, py = 0, ok = false;
-          for (let tr = 0; tr < 120 && !ok; tr++) {
+          for (let tr = 0; tr < 150 && !ok; tr++) {
             let pick = rnd() * totW, ci = 0;
             while (pick > cells[ci].wgt && ci < cells.length - 1) { pick -= cells[ci].wgt; ci++; }
             const c = cells[ci];
             px = clamp((c.i + rnd()) * cw, size * 0.6, room.w - size * 0.6);
             py = clamp((c.j + rnd()) * ch, size * 0.6, room.h - size * 0.6);
             ok = true;
-            for (const b of bugs) if (Math.hypot(px - b.x, py - b.y) < size * 1.25) { ok = false; break; }
+            for (const b of bugs) if (Math.hypot(px - b.x, py - b.y) < size * 2.2) { ok = false; break; }
           }
-          bugs.push({
-            x: px, y: py, r: size / 2, found: false,
-            img: BUGS[(rnd() * BUGS.length) | 0],
-            rot: (rnd() - 0.5) * 0.9, ph: rnd() * 7, fade: 0,
-          });
+          const id = BUGS[(rnd() * BUGS.length) | 0];
+          const b = { x: px, y: py, r: size / 2, found: false, img: id, rot: (rnd() - 0.5) * 1.6, fade: 0 };
+          b.spr = tinted(id, sampleAt(room, px, py), camo);
+          bugs.push(b);
         }
-        found = 0; elapsed = 0; hints = HINTS; penalty = 0;
+        found = 0; elapsed = 0; hints = HINTS(n); penalty = 0;
         fx = []; ring = null; hintT = 0;
         view = { s: 1, x: room.w / 2, y: room.h / 2 };
-        recomputeLimits(); view.s = minS; clampView();
-        tween = null; playing = true;
+        recomputeLimits(); view.s = minS; clampView(); applyView();
+        tween = null; playing = true; dirty = true;
         save.lvl = n; save.maxLvl = Math.max(save.maxLvl, n); persist();
         api.setBest("germs", n + 1);
         removeOverlay(); updateHud(true);
@@ -250,12 +315,11 @@
       /* ================= Interactions ================= */
       const pointers = new Map();
       let pinch = null, dragged = false, downT = 0, downPt = null, lastTap = 0;
-
-      function evPos(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+      const evPos = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
 
       function onDown(e) {
         if (!playing || !ready) return;
-        canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+        try { canvas.setPointerCapture(e.pointerId); } catch (x) {}
         pointers.set(e.pointerId, evPos(e));
         if (pointers.size === 1) { dragged = false; downT = performance.now(); downPt = evPos(e); tween = null; }
         if (pointers.size === 2) {
@@ -274,11 +338,11 @@
           const d = Math.hypot(a.x - b.x, a.y - b.y), m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
           zoomAt(m, (d || 1) / (pinch.d || 1));
           view.x -= (m.x - pinch.m.x) / view.s; view.y -= (m.y - pinch.m.y) / view.s;
-          clampView(); pinch = { d, m };
+          clampView(); applyView(); pinch = { d, m };
         } else if (pointers.size === 1) {
           const dx = now.x - prev.x, dy = now.y - prev.y;
           if (Math.hypot(now.x - downPt.x, now.y - downPt.y) > 8) dragged = true;
-          view.x -= dx / view.s; view.y -= dy / view.s; clampView();
+          view.x -= dx / view.s; view.y -= dy / view.s; clampView(); applyView();
         }
         e.preventDefault();
       }
@@ -289,7 +353,7 @@
         if (pointers.size < 2) pinch = null;
         if (pointers.size === 0 && !dragged && performance.now() - downT < 400) {
           const now = performance.now();
-          if (now - lastTap < 300) { zoomAt(p, 2); clampView(); lastTap = 0; }
+          if (now - lastTap < 300) { zoomAt(p, 2.2); clampView(); applyView(); lastTap = 0; }
           else { lastTap = now; tap(p); }
         }
       }
@@ -300,7 +364,7 @@
         view.y = before.y - (pt.y - H / 2) / view.s;
         clampView();
       }
-      function onWheel(e) { if (!playing) return; e.preventDefault(); zoomAt(evPos(e), e.deltaY < 0 ? 1.18 : 1 / 1.18); }
+      function onWheel(e) { if (!playing) return; e.preventDefault(); zoomAt(evPos(e), e.deltaY < 0 ? 1.18 : 1 / 1.18); applyView(); }
 
       canvas.addEventListener("pointerdown", onDown);
       canvas.addEventListener("pointermove", onMove);
@@ -310,41 +374,38 @@
       const onResize = () => resize();
       window.addEventListener("resize", onResize);
 
-      /* ---------- Toucher un microbe ----------
-         La tolérance vaut au moins ~18 px À L'ÉCRAN : en vue d'ensemble
-         elle est donc minuscule dans l'image → il faut zoomer pour viser. */
       function tap(pt) {
         const p = toImage(pt.x, pt.y);
         let best = null, bd = 1e9;
         for (const b of bugs) {
           if (b.found) continue;
           const d = Math.hypot(p.x - b.x, p.y - b.y);
-          const tol = Math.max(b.r * 0.85, 18 / view.s);
+          const tol = Math.max(b.r * 0.95, 16 / view.s);
           if (d < tol && d < bd) { bd = d; best = b; }
         }
-        if (best) hit(best, pt);
-        else miss(pt);
+        if (best) hit(best); else miss(p);
       }
-      function hit(b, pt) {
+      const FXC = ["#ffffff", C.turq, "#d9f7ff", C.lime];
+      function hit(b) {
         b.found = true; b.fade = 1; found++;
         for (let i = 0; i < 14; i++) {
           const a = Math.random() * 7, sp = 40 + Math.random() * 110;
-          fx.push({ x: b.x, y: b.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 30, life: 1, r: b.r * (0.12 + Math.random() * 0.14) });
+          fx.push({ x: b.x, y: b.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 30,
+                    life: 1, r: b.r * (0.18 + Math.random() * 0.22), col: FXC[(Math.random() * 4) | 0] });
         }
         api.soundGood(); api.beep(720, 0.06, "triangle", 0.06); api.vibrate([8, 20, 10]);
-        updateHud(true);
+        dirty = true; updateHud(true);
         if (found >= bugs.length) doneTimer = setTimeout(levelDone, 450);
       }
-      function miss(pt) {
-        const p = toImage(pt.x, pt.y);
+      function miss(p) {
         for (let i = 0; i < 5; i++) {
           const a = Math.random() * 7, sp = 20 + Math.random() * 50;
-          fx.push({ x: p.x, y: p.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.55, r: 6 / view.s, pale: true });
+          fx.push({ x: p.x, y: p.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+                    life: 0.55, r: 6 / view.s, col: "#dfe9ff", pale: true });
         }
-        api.beep(180, 0.04, "sine", 0.03); api.vibrate(4);
+        api.beep(180, 0.04, "sine", 0.03); api.vibrate(4); dirty = true;
       }
 
-      /* ---------- Loupe ---------- */
       hintBtn.addEventListener("click", () => {
         if (!playing || hints <= 0) return;
         const rest = bugs.filter((b) => !b.found);
@@ -352,9 +413,9 @@
         const b = rest[(Math.random() * rest.length) | 0];
         hints--; penalty += HINT_COST;
         ring = { x: b.x, y: b.y, r: b.r }; hintT = 3;
-        tween = { s: Math.max(view.s, minS * 2.6), x: b.x, y: b.y, t: 0 };
+        tween = { s: clamp(minS * 4, minS, maxS), x: b.x, y: b.y, t: 0 };
         api.beep(880, 0.08, "sine", 0.05);
-        updateHud(true);
+        updateHud(true); dirty = true;
       });
       wideBtn.addEventListener("click", () => {
         if (!playing) return;
@@ -371,11 +432,10 @@
         ov.innerHTML = `<div class="gm-card">${html}</div>`;
         board.appendChild(ov); return ov;
       }
-      const starsFor = (t) => { const p = parOf(level); return t <= p ? 3 : t <= p * 1.7 ? 2 : 1; };
+      const starsFor = (t) => { const p = PAR(level); return t <= p ? 3 : t <= p * 1.7 ? 2 : 1; };
 
       function levelDone() {
-        doneTimer = 0;
-        if (dead) return;
+        doneTimer = 0; if (dead) return;
         playing = false;
         const t = elapsed + penalty, st = starsFor(t);
         if (st > (save.stars[level] || 0)) save.stars[level] = st;
@@ -389,8 +449,8 @@
           <div class="gm-stars">${"⭐".repeat(st)}${"☆".repeat(3 - st)}</div>
           <p><b>${bugs.length} microbes</b> attrapés en <b>${Math.round(elapsed)} s</b>
              ${penalty ? `<br><span style="opacity:.7">+${penalty} s de loupe</span>` : ""}
-             ${st < 3 ? `<br><span style="opacity:.7">3 ⭐ en moins de ${Math.round(parOf(level))} s</span>` : ""}</p>
-          <button class="gm-big g" data-a="next">${nr.emoji} Niveau ${next + 1} · ${countOf(next)} microbes</button>
+             ${st < 3 ? `<br><span style="opacity:.7">3 ⭐ en moins de ${Math.round(PAR(level))} s</span>` : ""}</p>
+          <button class="gm-big g" data-a="next">${nr.emoji} Niveau ${next + 1} · ${COUNT(next)} microbes</button>
           <button class="gm-big w" data-a="again">↺ Refaire ce niveau</button>
           <button class="gm-big w" data-a="map">🗺️ Carte des niveaux</button>`);
         o.addEventListener("click", (e) => {
@@ -408,15 +468,15 @@
           const r = roomOf(n), locked = n > save.maxLvl, st = save.stars[n] || 0;
           tiles += `<div class="gm-tile ${locked ? "lock" : n === save.lvl ? "cur" : ""}" ${locked ? "" : `data-n="${n}"`}>
             <span class="e">${locked ? "🔒" : r.emoji}</span>
-            <span class="n">${countOf(n)} microbes</span>
+            <span class="n">${COUNT(n)} microbes</span>
             <span class="s">${locked ? "" : "⭐".repeat(st) + "☆".repeat(3 - st)}</span>
             <span class="l">niv. ${n + 1}</span></div>`;
         }
         const tot = Object.keys(save.stars).reduce((a, k) => a + save.stars[k], 0);
         const o = overlay(`
           <h2>🧼 Désinfecte ta chambre</h2>
-          <p>Des microbes se cachent dans la chambre.<br>
-             <b>Pince pour zoomer</b>, glisse pour te déplacer,<br>
+          <p>Les microbes sont <b>minuscules</b> et camouflés.<br>
+             <b>Pince pour zoomer</b>, glisse pour fouiller,<br>
              et tape dessus pour les désinfecter.</p>
           <div style="font-weight:700">⭐ ${tot}</div>
           <div class="gm-grid">${tiles}</div>
@@ -427,91 +487,80 @@
         });
       }
 
-      /* ================= Boucle ================= */
+      /* ================= Boucle =================
+         On ne dessine QUE s'il se passe quelque chose. Au repos (décor
+         immobile, aucune particule) la boucle ne fait rien du tout. */
       let raf = 0, last = performance.now();
       function frame(ts) {
         raf = requestAnimationFrame(frame);
         const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
         if (playing) {
           elapsed += dt;
-          if (hintT > 0) { hintT -= dt; if (hintT <= 0) ring = null; }
+          if (elapsed < 4.2) dirty = true;                 // le bandeau d'aide s'estompe
+          if (hintT > 0) { hintT -= dt; dirty = true; if (hintT <= 0) ring = null; }
         }
         if (tween) {
           tween.t = Math.min(1, tween.t + dt * 2.6);
           const k = 1 - Math.pow(1 - tween.t, 3);
-          view.s = view.s + (tween.s - view.s) * k * 0.5;
-          view.x = view.x + (tween.x - view.x) * k * 0.5;
-          view.y = view.y + (tween.y - view.y) * k * 0.5;
-          clampView();
+          view.s += (tween.s - view.s) * k * 0.5;
+          view.x += (tween.x - view.x) * k * 0.5;
+          view.y += (tween.y - view.y) * k * 0.5;
+          clampView(); applyView();
           if (tween.t >= 1) tween = null;
         }
-        for (let i = fx.length - 1; i >= 0; i--) {
-          const p = fx[i];
-          p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 120 * dt; p.life -= dt * 1.5;
-          if (p.life <= 0) fx.splice(i, 1);
+        if (fx.length) {
+          for (let i = fx.length - 1; i >= 0; i--) {
+            const p = fx[i];
+            p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 120 * dt; p.life -= dt * 1.5;
+            if (p.life <= 0) fx.splice(i, 1);
+          }
+          dirty = true;
         }
-        for (const b of bugs) if (b.fade > 0) b.fade = Math.max(0, b.fade - dt * 2.2);
-        draw(ts / 1000);
+        for (const b of bugs) if (b.fade > 0) { b.fade = Math.max(0, b.fade - dt * 2.2); dirty = true; }
+        if (dirty) { dirty = false; draw(); }
       }
 
-      function draw(t) {
-        const bgg = ctx.createLinearGradient(0, 0, 0, H);
-        bgg.addColorStop(0, room.c1); bgg.addColorStop(1, room.c2);
-        ctx.fillStyle = bgg; ctx.fillRect(0, 0, W, H);
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
         if (!ready) {
           ctx.fillStyle = "#fff"; ctx.textAlign = "center";
           ctx.font = "600 " + Math.round(16 * uiS) + "px Fredoka, sans-serif";
           ctx.fillText("chargement…", W / 2, H / 2);
           return;
         }
-        const im = imgs["room_" + room.id];
-        const o = toScreen(0, 0);
-        if (im && im.width) ctx.drawImage(im, o.x, o.y, room.w * view.s, room.h * view.s);
-
-        // microbes
         for (const b of bugs) {
           if (b.found && b.fade <= 0) continue;
-          const p = toScreen(b.x, b.y);
-          const rr = b.r * view.s;
+          const p = toScreen(b.x, b.y), rr = b.r * view.s;
           if (p.x + rr < -20 || p.x - rr > W + 20 || p.y + rr < -20 || p.y - rr > H + 20) continue;
-          const breathe = 1 + 0.05 * Math.sin(t * 2 + b.ph);
-          const g = imgs["bug_" + b.img];
           ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(b.rot + 0.05 * Math.sin(t * 1.3 + b.ph));
-          if (b.found) { ctx.globalAlpha = b.fade; ctx.scale(1 + (1 - b.fade) * 0.8, 1 + (1 - b.fade) * 0.8); }
-          const s = rr * 2 * breathe;
-          if (g && g.width) ctx.drawImage(g, -s / 2, -s / 2, s, s);
+          ctx.translate(p.x, p.y); ctx.rotate(b.rot);
+          if (b.found) { const g = 1 + (1 - b.fade) * 0.8; ctx.globalAlpha = b.fade; ctx.scale(g, g); }
+          const s = rr * 2;
+          ctx.drawImage(b.spr, -s / 2, -s / 2, s, s);
           ctx.restore();
         }
-
-        // cercle de la loupe
         if (ring) {
           const p = toScreen(ring.x, ring.y);
-          const pulse = 1 + 0.35 * Math.abs(Math.sin(t * 4));
+          const pulse = 1 + 0.35 * Math.abs(Math.sin(hintT * 6));
           ctx.save();
           ctx.globalAlpha = Math.min(1, hintT) * 0.9;
           ctx.strokeStyle = C.sun; ctx.lineWidth = 4 * uiS;
-          ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(26 * uiS, ring.r * view.s * 1.6) * pulse, 0, 7); ctx.stroke();
+          ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(26 * uiS, ring.r * view.s * 2.2) * pulse, 0, 7); ctx.stroke();
           ctx.restore();
         }
-
-        // particules (spray + étincelles)
         for (const p of fx) {
           const sp = toScreen(p.x, p.y);
           ctx.globalAlpha = Math.max(0, p.life) * (p.pale ? 0.5 : 0.95);
-          ctx.fillStyle = p.pale ? "#dfe9ff" : (Math.random() < 0.5 ? "#fff" : C.turq);
+          ctx.fillStyle = p.col;
           ctx.beginPath(); ctx.arc(sp.x, sp.y, Math.max(1.5, p.r * view.s), 0, 7); ctx.fill();
         }
         ctx.globalAlpha = 1;
-
-        // aide au démarrage
         if (playing && elapsed < 4 && found === 0) {
           ctx.globalAlpha = Math.min(1, 4 - elapsed) * 0.92;
           ctx.fillStyle = "#fff"; ctx.strokeStyle = "rgba(30,22,48,.65)";
           ctx.lineWidth = 4 * uiS; ctx.textAlign = "center";
           ctx.font = "600 " + Math.round(15 * uiS) + "px Fredoka, sans-serif";
-          const msg = "Pince pour zoomer · tape les microbes";
+          const msg = "Pince pour zoomer · les microbes sont minuscules";
           ctx.strokeText(msg, W / 2, H - 22 * uiS); ctx.fillText(msg, W / 2, H - 22 * uiS);
           ctx.globalAlpha = 1;
         }
@@ -520,13 +569,13 @@
       /* ================= Démarrage ================= */
       function onReady() { resize(); startLevel(save.lvl); openMap(); }
       resize();
-      if (ready) onReady();
 
       if (window.__ARCADE_DEBUG) {
         window.__germs = {
           get bugs() { return bugs; }, get view() { return view; }, get playing() { return playing; },
           get level() { return level; }, get found() { return found; }, get room() { return room; },
-          get minS() { return minS; }, tapImage(ix, iy) { const p = toScreen(ix, iy); tap(p); },
+          get minS() { return minS; }, get maxS() { return maxS; },
+          tapImage(ix, iy) { tap(toScreen(ix, iy)); },
         };
       }
 

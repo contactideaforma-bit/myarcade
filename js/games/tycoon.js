@@ -173,10 +173,14 @@
 
         /* --- Scène (zone de tap + visiteurs + pièces) --- */
         .pk-scene{left:0;right:0;top:15%;height:33%;cursor:pointer;}
-        .pk-vis{position:absolute;font-size:max(12px,calc(var(--u)*4));will-change:transform;
-          filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));pointer-events:none;}
-        @keyframes pkWalk{from{left:-12%;}to{left:106%;}}
-        @keyframes pkWalkR{from{left:106%;}to{left:-12%;}}
+        /* Le visiteur est une piste pleine largeur dont on anime le TRANSFORM
+           (composé par le GPU). Animer la propriété left déclenchait un recalcul de mise
+           en page à chaque image pour chaque visiteur → micro-saccades. */
+        .pk-vis{position:absolute;left:0;width:100%;height:0;will-change:transform;pointer-events:none;}
+        .pk-vis b{position:absolute;left:-12%;font-weight:400;font-size:max(12px,calc(var(--u)*4));
+          filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));}
+        @keyframes pkWalk{from{transform:translate3d(0,0,0);}to{transform:translate3d(118%,0,0);}}
+        @keyframes pkWalkR{from{transform:translate3d(118%,0,0);}to{transform:translate3d(0,0,0);}}
         .pk-taphint{position:absolute;left:50%;top:56%;transform:translateX(-50%);
           font-family:'Patrick Hand',cursive;font-size:max(10px,calc(var(--u)*3.4));color:#fff;
           background:rgba(43,36,64,.55);padding:2px 12px;border-radius:14px;white-space:nowrap;pointer-events:none;}
@@ -370,11 +374,12 @@
         while (visitors.length < want) {
           const v = document.createElement("div");
           v.className = "pk-vis";
-          v.textContent = PEOPLE[(Math.random() * PEOPLE.length) | 0];
+          const em = document.createElement("b");
+          em.textContent = PEOPLE[(Math.random() * PEOPLE.length) | 0];
           const right = Math.random() < 0.5;
+          if (!right) em.style.transform = "scaleX(-1)";
+          v.appendChild(em);
           v.style.top = rnd(38, 92) + "%";
-          v.style.left = "-12%";
-          if (!right) v.style.transform = "scaleX(-1)";
           v.style.animation = `${right ? "pkWalk" : "pkWalkR"} ${rnd(13, 26).toFixed(1)}s linear ${(-rnd(0, 26)).toFixed(1)}s infinite`;
           scene.appendChild(v); visitors.push(v);
         }
