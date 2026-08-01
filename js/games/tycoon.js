@@ -110,6 +110,7 @@
       let save = load();
 
       let frenzyT = 0, boostI = -1, boostT = 0;
+      let dead = false, doneTimer = 0;   // garde-fou : rien ne doit survivre à api.onExit
       const FRENZY = 7;
 
       /* ================= Économie ================= */
@@ -436,7 +437,7 @@
           toast("🎉 " + ATTR[i].name + " ouvre ses portes !");
           syncVisitors();
         } else { api.beep(300 + Math.min(500, save.lv[i] * 14), 0.05, "square", 0.06); api.vibrate(10); }
-        if (complete()) setTimeout(seasonDone, 600);
+        if (complete()) doneTimer = setTimeout(seasonDone, 600);
         refresh(); persist();
         return true;
       }
@@ -477,6 +478,7 @@
       /* ================= Fiche attraction ================= */
       function overlay(html) {
         const ov = document.createElement("div"); ov.className = "pk-ov";
+        if (dead) return ov;
         ov.innerHTML = `<div class="pk-card">${html}</div>`;
         ov.addEventListener("click", (e) => { if (e.target === ov) ov.remove(); });
         wrap.appendChild(ov); return ov;
@@ -587,7 +589,7 @@
           if (e.target.closest("[data-act='go']") && vipGain() >= 1) { newSeason(); ov.remove(); }
         });
       }
-      function seasonDone() { api.win(); openSeason(); }
+      function seasonDone() { doneTimer = 0; if (dead) return; api.win(); openSeason(); }
       function newSeason() {
         const g = vipGain();
         save.vip += g; save.vipTotal += g; save.season++;
@@ -720,6 +722,8 @@
       document.addEventListener("visibilitychange", onVis);
 
       api.onExit(() => {
+        dead = true;
+        if (doneTimer) { clearTimeout(doneTimer); doneTimer = 0; }
         clearInterval(iv);
         document.removeEventListener("visibilitychange", onVis);
         window.removeEventListener("resize", layout);
