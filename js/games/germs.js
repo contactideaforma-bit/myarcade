@@ -200,6 +200,7 @@
         canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         uiS = clamp(Math.min(W, H) / 480, 0.7, 2);
+        syncRect();
         recomputeLimits(); applyView();
       }
       function recomputeLimits() {
@@ -333,7 +334,11 @@
       const pointers = new Map();
       let pinch = null, dragged = false, downT = 0, downPt = null, lastTouchT = 0;
       let lastTap = { t: 0, x: 0, y: 0 };
-      const evPos = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+      // rectangle mis en cache : un getBoundingClientRect() par pointermove force
+      // un recalcul de mise en page à chaque image pendant le glissement
+      const rect = { left: 0, top: 0 };
+      const syncRect = () => { const r = canvas.getBoundingClientRect(); rect.left = r.left; rect.top = r.top; };
+      const evPos = (e) => ({ x: e.clientX - rect.left, y: e.clientY - rect.top });
 
       function onDown(e) {
         if (!playing || !ready) return;
@@ -342,6 +347,7 @@
         if (e.pointerType === "mouse") { if (performance.now() - lastTouchT < 900) return; }
         else lastTouchT = performance.now();
         try { canvas.setPointerCapture(e.pointerId); } catch (x) {}
+        syncRect();
         pointers.set(e.pointerId, evPos(e));
         if (pointers.size === 1) { dragged = false; downT = performance.now(); downPt = evPos(e); tween = null; }
         if (pointers.size === 2) {
@@ -608,8 +614,8 @@
           get level() { return level; }, get found() { return found; }, get room() { return room; },
           get minS() { return minS; }, get maxS() { return maxS; },
           tapImage(ix, iy) { tap(toScreen(ix, iy)); },
-          screenOf(ix, iy) { const r = canvas.getBoundingClientRect(), p = toScreen(ix, iy);
-                             return { x: r.left + p.x, y: r.top + p.y }; },
+          screenOf(ix, iy) { syncRect(); const p = toScreen(ix, iy);
+                             return { x: rect.left + p.x, y: rect.top + p.y }; },
           get canvasBox() { const r = canvas.getBoundingClientRect();
                             return { w: Math.round(r.width), h: Math.round(r.height) }; },
         };

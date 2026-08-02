@@ -29,31 +29,40 @@
 
   // 12 thèmes, 6 tailles d'objets chacun. Le 6e est le « boss » du décor.
   const THEMES = [
-    { id: "candy", name: "Bonbons",   emoji: "🍭", sky: ["#fff1f7", "#ffd9ea"], ground: "#ffe8f3",
-      t: [["🍬","🌰","🫐","🍒"], ["🍪","🍫","🧁"], ["🍩","🥨","🍿"], ["🍦","🍮","🥧"], ["🍰","🍭"], ["🎂"]] },
     { id: "food", name: "Nourriture", emoji: "🍔", sky: ["#fff8e8", "#ffe4bd"], ground: "#ffeed4",
       t: [["🌰","🥜","🫒","🍇"], ["🥚","🍅","🥕","🧄"], ["🍔","🌮","🥪","🧀"], ["🍕","🍗","🥘"], ["🍉","🥧"], ["🏪"]] },
     { id: "animals", name: "Animaux", emoji: "🐾", sky: ["#eefbef", "#c9edd0"], ground: "#dcf3de",
       t: [["🐜","🐝","🐞","🦗"], ["🐭","🐸","🐹","🦎"], ["🐰","🐱","🐶","🦊"], ["🐷","🐼","🦁"], ["🐴","🐮","🦒"], ["🐘"]] },
-    { id: "home", name: "Maison",     emoji: "🏡", sky: ["#fdf4ff", "#e6d9f6"], ground: "#f2e9fb",
+    { id: "people", name: "Personnes", emoji: "🧑", sky: ["#fff2f6", "#ffd6e2"], ground: "#ffe6ee",
+      t: [["👣","🦷","👁️","🧢"], ["👶","🧒","👧"], ["🧑","👩","👨","🧓"], ["👮","👩‍⚕️","👨‍🍳","🧑‍🚒"], ["🦸","🧙"], ["🗿"]] },
+    { id: "candy", name: "Bonbons", emoji: "🍭", sky: ["#fff1f7", "#ffd9ea"], ground: "#ffe8f3",
+      t: [["🍬","🌰","🫐","🍒"], ["🍪","🍫","🧁"], ["🍩","🥨","🍿"], ["🍦","🍮","🥧"], ["🍰","🍭"], ["🎂"]] },
+    { id: "toys", name: "Jouets", emoji: "🧸", sky: ["#f3f6ff", "#d5ddfa"], ground: "#e6ebfd",
+      t: [["🔴","🪀","🎲","🧩"], ["🪆","🎈","🪁"], ["🧸","🤖","🎮"], ["🛴","🪃","🎯"], ["🎠","🛝"], ["🎡"]] },
+    { id: "home", name: "Maison", emoji: "🏡", sky: ["#fdf4ff", "#e6d9f6"], ground: "#f2e9fb",
       t: [["🔑","🔌","🧷","🪥"], ["☕","🕯️","🧴","📱"], ["📚","🪴","🧺","🖥️"], ["🪑","🚪","🛁"], ["🛋️","🛏️"], ["🏡"]] },
-    { id: "garden", name: "Jardin",   emoji: "🌳", sky: ["#f2fbe9", "#d2ecb4"], ground: "#e5f5d4",
-      t: [["🌱","🐛","🍄","🌰"], ["🌷","🌻","🪴","🥀"], ["🌿","🪨","🦔","🐢"], ["🌵","🎍","⛲"], ["🌳","🏕️"], ["🚜"]] },
-    { id: "city", name: "Ville",      emoji: "🚗", sky: ["#eef4fb", "#cfdcec"], ground: "#e3ebf5",
+    { id: "farm", name: "Ferme", emoji: "🚜", sky: ["#f7fbe8", "#dcecb0"], ground: "#eaf5d0",
+      t: [["🌾","🐛","🌰","🪱"], ["🐣","🐥","🥚"], ["🐓","🦆","🐇"], ["🐑","🐐","🐖"], ["🐄","🐎"], ["🚜"]] },
+    { id: "garden", name: "Jardin", emoji: "🌳", sky: ["#f2fbe9", "#d2ecb4"], ground: "#e5f5d4",
+      t: [["🌱","🐛","🍄","🌰"], ["🌷","🌻","🪴","🥀"], ["🌿","🪨","🦔","🐢"], ["🌵","🎍","⛲"], ["🌳","🏕️"], ["🏞️"]] },
+    { id: "city", name: "Ville", emoji: "🚗", sky: ["#eef4fb", "#cfdcec"], ground: "#e3ebf5",
       t: [["🔩","🥤","🪙","📎"], ["🛹","🧃","📦","🪧"], ["🚲","🛵","🛴"], ["🚗","🚕","🏍️"], ["🚌","🚚"], ["🏢"]] },
-    { id: "beach", name: "Plage",     emoji: "🏖️", sky: ["#e9f9ff", "#b9e8f7"], ground: "#fdf0cf",
+    { id: "beach", name: "Plage", emoji: "🏖️", sky: ["#e9f9ff", "#b9e8f7"], ground: "#fdf0cf",
       t: [["🐚","🦐","🪸","🧿"], ["🦀","🐠","🥥","🍹"], ["🐙","🏐","⛱️"], ["🐬","🛟","🏄"], ["🦈","⛵"], ["🛳️"]] },
-    { id: "sport", name: "Sport",     emoji: "⚽", sky: ["#fff0ef", "#ffd0cc"], ground: "#ffe2df",
+    { id: "sport", name: "Sport", emoji: "⚽", sky: ["#fff0ef", "#ffd0cc"], ground: "#ffe2df",
       t: [["🏓","🥎","🎱","🏸"], ["⚾","🥊","🎾","🥏"], ["⚽","🏀","🏈","🏐"], ["🚴","🏋️","🤺"], ["🛷","🏎️"], ["🏟️"]] },
-    { id: "music", name: "Musique",   emoji: "🎵", sky: ["#f4efff", "#d8caf7"], ground: "#eae2fb",
+    { id: "music", name: "Musique", emoji: "🎵", sky: ["#f4efff", "#d8caf7"], ground: "#eae2fb",
       t: [["🎵","🎶","🔔","📀"], ["🎤","🎧","🪇"], ["🎸","🎻","🪕"], ["🥁","🎷","🪗"], ["🎹","🎺"], ["🎪"]] },
-    { id: "space", name: "Espace",    emoji: "🚀", sky: ["#1d2145", "#3b3070"], ground: "#2a2a55", dark: true,
+    { id: "dino", name: "Dinosaures", emoji: "🦖", sky: ["#eef7ef", "#bfe0c4"], ground: "#d8ecd9",
+      t: [["🥚","🐜","🍃","🦟"], ["🦎","🕷️","🐸"], ["🐢","🦔","🦂"], ["🐊","🦏"], ["🦕","🦖"], ["🌋"]] },
+    { id: "space", name: "Espace", emoji: "🚀", sky: ["#1d2145", "#3b3070"], ground: "#2a2a55", dark: true,
       t: [["✨","⭐","💫","🌟"], ["☄️","🛰️","👾"], ["🌙","🔭","🧑‍🚀"], ["🚀","🛸"], ["🪐","🌍"], ["☀️"]] },
     { id: "spooky", name: "Halloween", emoji: "🎃", sky: ["#2a1f3d", "#4a2c52"], ground: "#3a2748", dark: true,
       t: [["🕷️","🦇","🍬","🕯️"], ["👻","💀","🕸️"], ["🎃","🧙","🧟"], ["⚰️","🪦","🐈‍⬛"], ["🏚️","🌕"], ["🏰"]] },
-    { id: "xmas", name: "Noël",       emoji: "🎄", sky: ["#eef6ff", "#c8dcf0"], ground: "#e6f0fa",
+    { id: "xmas", name: "Noël", emoji: "🎄", sky: ["#eef6ff", "#c8dcf0"], ground: "#e6f0fa",
       t: [["❄️","🔔","🍬","⭐"], ["🧦","🎁","🍪"], ["⛄","🕯️","🦌"], ["🎅","🛷","🏠"], ["🎄","🗻"], ["🏔️"]] },
   ];
+
 
   window.ARCADE.register({
     id: "hole", title: "Le Trou Glouton", emoji: "🕳️",
@@ -84,7 +93,7 @@
       const roundOf = (n) => Math.floor(n / THEMES.length) + 1;   // tour 1, 2, 3…
 
       /* ================= Canvas ================= */
-      let dpr = Math.min(2, window.devicePixelRatio || 1);
+      let dpr = Math.min(1.75, window.devicePixelRatio || 1);
       const canvas = document.createElement("canvas");
       canvas.style.cssText = "width:100%;height:100%;display:block;touch-action:none;";
       board.appendChild(canvas);
@@ -152,19 +161,74 @@
       const glowCv = radialSprite([[0, "rgba(30,22,48,.30)"], [1, "rgba(30,22,48,0)"]], 0.414);
       const bodyCv = radialSprite([[0, "#08080f"], [0.72, "#181428"], [1, "#3a3358"]], 0.12, -0.1, -0.11);
 
-      /* ================= Sprites emoji (pré-rendus) ================= */
-      const cache = {};
-      function sprite(emoji, px) {
-        const key = emoji + "@" + px;
+      /* ================= Sprites emoji EN RELIEF (pré-rendus) =================
+         Un emoji est une image plate. Pour lui donner du volume on l'empile
+         une dizaine de fois vers le bas en silhouette sombre (extrusion), on
+         cuit l'ombre au sol DANS le sprite, et on pose la face éclairée
+         par-dessus. Tout est fait UNE fois par emoji : au rendu, un objet
+         ne coûte plus qu'un seul drawImage (avant : ombre + anneau + emoji). */
+      const cache = {}, silCache = {};
+      const EMOJI_FONT = "'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',serif";
+      function sprite(emoji, px, dim) {
+        const key = emoji + "@" + px + (dim ? "d" : "");
         if (cache[key]) return cache[key];
-        const c = document.createElement("canvas"); c.width = c.height = px;
-        const x = c.getContext("2d");
-        x.font = Math.floor(px * 0.8) + "px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',serif";
-        x.textAlign = "center"; x.textBaseline = "middle";
-        x.fillText(emoji, px / 2, px / 2 + px * 0.04);
+        const font = Math.floor(px * 0.72) + "px " + EMOJI_FONT;
+        const cx = px / 2, cy = px * 0.42;
+        const mk = () => {
+          const c = document.createElement("canvas"); c.width = c.height = px;
+          const x = c.getContext("2d");
+          x.font = font; x.textAlign = "center"; x.textBaseline = "middle";
+          return [c, x];
+        };
+        // silhouette sombre : base de l'extrusion, partagée par les deux variantes
+        const sk = emoji + "@" + px;
+        let sil = silCache[sk];
+        if (!sil) {
+          const r = mk(); sil = r[0]; const sx = r[1];
+          sx.fillText(emoji, cx, cy);
+          sx.globalCompositeOperation = "source-atop";
+          sx.fillStyle = "#2a2140"; sx.fillRect(0, 0, px, px);
+          silCache[sk] = sil;
+        }
+        const [c, x] = mk();
+        // 1) ombre au sol, cuite dans le sprite
+        x.save();
+        x.translate(cx, px * 0.88); x.scale(1, 0.30);
+        const sg = x.createRadialGradient(0, 0, px * 0.03, 0, 0, px * 0.33);
+        sg.addColorStop(0, "rgba(18,12,28,.42)"); sg.addColorStop(1, "rgba(18,12,28,0)");
+        x.fillStyle = sg; x.beginPath(); x.arc(0, 0, px * 0.33, 0, 7); x.fill();
+        x.restore();
+        // 2) extrusion : la silhouette empilée vers le bas
+        const N = 6, MAX = px * 0.07;
+        x.globalAlpha = 0.55;
+        for (let i = N; i >= 1; i--) x.drawImage(sil, 0, (MAX * i) / N);
+        x.globalAlpha = 1;
+        // 3) la face
+        x.fillText(emoji, cx, cy);
+        // 4) lumière du haut / ombre du bas, appliquées à tout le volume d'un coup
+        x.globalCompositeOperation = "source-atop";
+        const gl = x.createLinearGradient(0, cy - px * 0.34, 0, cy + px * 0.22);
+        gl.addColorStop(0, "rgba(255,255,255,.34)");
+        gl.addColorStop(0.55, "rgba(255,255,255,0)");
+        gl.addColorStop(1, "rgba(0,0,0,.16)");
+        x.fillStyle = gl; x.fillRect(0, 0, px, px);
+        if (dim) { x.fillStyle = "rgba(96,90,120,.46)"; x.fillRect(0, 0, px, px); }
+        x.globalCompositeOperation = "source-over";
         cache[key] = c; return c;
       }
-      const sprFor = (o) => sprite(o.emoji, o.tier >= 4 ? 384 : o.tier === 3 ? 192 : 96);
+      const sprSize = (t) => (t >= 4 ? 192 : t === 3 ? 144 : 96);
+      const sprFor = (o, dim) => sprite(o.emoji, sprSize(o.tier), dim);
+
+      // Les sprites en relief coûtent cher à fabriquer. On les prépare TOUS au début
+      // du niveau, mais étalés sur plusieurs images (3 par image) : plus de saccade
+      // au moment où un emoji apparaît pour la première fois.
+      let spriteQueue = [];
+      function queueSprites(th) {
+        spriteQueue = [];
+        th.t.forEach((pool, k) => pool.forEach((e) => {
+          spriteQueue.push([e, sprSize(k), false], [e, sprSize(k), true]);
+        }));
+      }
 
       /* ================= État ================= */
       let W = 0, H = 0, uiS = 1;
@@ -175,7 +239,9 @@
       let level = save.lvl, theme = themeOf(level);
 
       function resize() {
-        dpr = Math.min(2, window.devicePixelRatio || 1);
+        // 1,75 au lieu de 2 : 25 % de pixels en moins à peindre chaque image.
+        // Sur des emojis (images bitmap déjà adoucies) la différence ne se voit pas.
+        dpr = Math.min(1.75, window.devicePixelRatio || 1);
         W = board.clientWidth; H = board.clientHeight;
         canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -219,7 +285,7 @@
         curve = built; totalMass = built.total; eatenMass = 0;
         totalCount = counts.reduce((a, b) => a + b, 0);
         world = clamp(Math.sqrt(totalMass * 14), 1500, 4600);
-        par = 10 + 0.8 * totalCount;
+        par = 12 + 1.15 * totalCount;   // sans aspiration, il faut passer sur chaque objet
 
         hole = { x: world / 2, y: world / 2, tx: world / 2, ty: world / 2, r: R0, scale: 1, pulse: 0, ang: 0 };
         objects = []; pops = []; ripples = [];
@@ -246,6 +312,7 @@
                            vx: Math.cos(a) * drift, vy: Math.sin(a) * drift, suck: 0, wob: Math.random() * 7 });
           }
         }
+        queueSprites(theme);
         elapsed = 0; hintT = 3.5; playing = true;
         save.lvl = n; save.maxLvl = Math.max(save.maxLvl, n); persist();
         api.setBest("hole", n + 1);
@@ -267,15 +334,17 @@
       const toWorld = (sx, sy) => ({ x: cam.x + (sx - W / 2) / zoom, y: cam.y + (sy - H / 2) / zoom });
 
       /* ---------- Entrées ---------- */
-      let activeId = null;
+      let activeId = null, rect = { left: 0, top: 0 };
+      const syncRect = () => { const r = canvas.getBoundingClientRect(); rect.left = r.left; rect.top = r.top; };
       function pointAt(e) {
-        const rct = canvas.getBoundingClientRect();
-        const p = toWorld(e.clientX - rct.left, e.clientY - rct.top - screenR() * 0.55);
+        // rectangle mis en cache : l'appeler à chaque pointermove forçait un
+        // recalcul de mise en page, d'où des à-coups pendant le glissement
+        const p = toWorld(e.clientX - rect.left, e.clientY - rect.top - Math.min(38, screenR() * 0.5));
         hole.tx = clamp(p.x, hole.r, world - hole.r);
         hole.ty = clamp(p.y, hole.r, world - hole.r);
       }
       const onDown = (e) => { if (!playing) return; if (activeId !== null) { e.preventDefault(); return; }
-        activeId = e.pointerId; try { canvas.setPointerCapture(e.pointerId); } catch (x) {} pointAt(e); e.preventDefault(); };
+        activeId = e.pointerId; try { canvas.setPointerCapture(e.pointerId); } catch (x) {} syncRect(); pointAt(e); e.preventDefault(); };
       const onMove = (e) => { if (!playing) return;
         if (e.pointerId === activeId || (e.pointerType === "mouse" && activeId === null)) { pointAt(e); e.preventDefault(); } };
       const onUp = (e) => { if (e.pointerId !== activeId) return;
@@ -284,7 +353,8 @@
       canvas.addEventListener("pointermove", onMove);
       canvas.addEventListener("pointerup", onUp);
       canvas.addEventListener("pointercancel", onUp);
-      const onResize = () => { resize(); if (hole) camSnap(); };
+      syncRect();
+      const onResize = () => { resize(); syncRect(); if (hole) camSnap(); };
       window.addEventListener("resize", onResize);
 
       /* ---------- HUD ---------- */
@@ -308,7 +378,7 @@
         hole.r = R0 * hole.scale;
         hole.pulse = 1;
         ripples.push({ x: hole.x, y: hole.y, r: hole.r, a: 0.55 });
-        if (o.tier >= 3) { pops.push({ x: o.x, y: o.y, txt: o.emoji, life: 1.1 }); api.soundGood(); }
+        if (o.tier >= 3) { pops.push({ x: o.x, y: o.y, spr: sprFor(o), life: 1.1 }); api.soundGood(); }
         if (o.tier === 5) api.soundWin();   // le boss : confettis réservés à la fin du niveau
         api.beep(180 + o.tier * 90, 0.05, "sine", 0.055);
         api.vibrate(o.tier >= 3 ? [8, 20, 10] : 7);
@@ -353,7 +423,8 @@
 
       function openMap() {
         playing = false;
-        const maxShow = save.maxLvl + 1;
+        // on montre toute la tournée : les 16 thèmes sont visibles dès le départ
+        const maxShow = Math.max(save.maxLvl + 1, THEMES.length - 1);
         let tiles = "";
         for (let n = 0; n <= maxShow; n++) {
           const th = themeOf(n), locked = n > save.maxLvl, st = save.stars[n] || 0;
@@ -383,6 +454,14 @@
       function frame(ts) {
         raf = requestAnimationFrame(frame);
         const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
+        // budget en pixels, pas en nombre : un gros sprite compte pour plusieurs petits,
+        // sinon une fournée contenant les 192 px bloquait l'image ~80 ms
+        if (spriteQueue.length) {
+          let budget = 42000;
+          while (spriteQueue.length && budget > 0) {
+            const q = spriteQueue.shift(); sprite(q[0], q[1], q[2]); budget -= q[1] * q[1];
+          }
+        }
         if (playing) step(dt);
         draw();
       }
@@ -390,8 +469,9 @@
       function step(dt) {
         elapsed += dt;
         if (hintT > 0) hintT -= dt;
-        hole.x += (hole.tx - hole.x) * Math.min(1, dt * 24);
-        hole.y += (hole.ty - hole.y) * Math.min(1, dt * 24);
+        // suivi quasi instantané : le trou colle au doigt
+        hole.x += (hole.tx - hole.x) * Math.min(1, dt * 45);
+        hole.y += (hole.ty - hole.y) * Math.min(1, dt * 45);
         hole.ang += dt * 0.6;
         hole.pulse *= (1 - dt * 4);
 
@@ -410,12 +490,9 @@
           const dx = hole.x - o.x, dy = hole.y - o.y, d = Math.hypot(dx, dy) || 0.001;
           const eatable = o.r <= hole.r * 1.02;
           if (eatable) {
-            const reach = (hole.r + o.r) * 2.2;
-            if (d < reach) {
-              const pull = (1 - d / reach) * 10;
-              o.x += dx / d * pull * dt * 32; o.y += dy / d * pull * dt * 32;
-            }
-            if (d < hole.r * 0.94) eat(o);
+            // AUCUNE aspiration : l'objet tombe quand il passe au-dessus du trou.
+            // C'est au joueur d'aller le chercher.
+            if (d < hole.r * 0.95) eat(o);
           } else if (d < hole.r + o.r * 0.8) {
             // trop gros : il glisse sur le bord au lieu de se superposer au trou
             const push = (hole.r + o.r * 0.8 - d) * Math.min(1, dt * 12);
@@ -433,12 +510,24 @@
       }
 
       /* ================= Rendu ================= */
+      let skyCv = null, skyKey = "";
+      function skyFill() {
+        const k = theme.id + "|" + W + "x" + H;
+        if (k !== skyKey) {
+          const g = ctx.createLinearGradient(0, 0, 0, H);
+          g.addColorStop(0, theme.sky[0]); g.addColorStop(1, theme.sky[1]);
+          skyCv = g; skyKey = k;
+        }
+        return skyCv;
+      }
       function draw() {
-        // ciel
-        const g = ctx.createLinearGradient(0, 0, 0, H);
-        g.addColorStop(0, theme.sky[0]); g.addColorStop(1, theme.sky[1]);
-        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-        if (!hole) return;
+        if (!hole) { ctx.fillStyle = skyFill(); ctx.fillRect(0, 0, W, H); return; }
+        // Le ciel n'est peint que s'il dépasse du sol : dès qu'on est un peu zoomé,
+        // le sol couvre tout l'écran et ce remplissage plein écran est inutile.
+        const hvw = W / 2 / zoom, hvh = H / 2 / zoom;
+        if (cam.x - hvw < 0 || cam.y - hvh < 0 || cam.x + hvw > world || cam.y + hvh > world) {
+          ctx.fillStyle = skyFill(); ctx.fillRect(0, 0, W, H);
+        }
 
         ctx.save();
         ctx.translate(W / 2, H / 2); ctx.scale(zoom, zoom); ctx.translate(-cam.x, -cam.y);
@@ -461,18 +550,11 @@
         const vx = cam.x - W / 2 / zoom, vy = cam.y - H / 2 / zoom, vw = W / zoom, vh = H / zoom;
         for (const o of objects) {
           if (o.x + o.r < vx || o.x - o.r > vx + vw || o.y + o.r < vy || o.y - o.r > vy + vh) continue;
+          // Trop gros pour toi → version grisée (sprite séparé, aucun surcoût au rendu).
+          // Ombre et relief sont déjà dans le sprite : un objet = UN drawImage.
           const eatable = o.r <= hole.r * 1.02;
-          ctx.globalAlpha = 0.14; ctx.fillStyle = "#000";
-          ctx.beginPath(); ctx.ellipse(o.x, o.y + o.r * 0.66, o.r * 0.6, o.r * 0.19, 0, 0, 7); ctx.fill();
-          ctx.globalAlpha = 1;
-          if (eatable && !o.suck) {   // liseré vert = à ta portée
-            ctx.globalAlpha = 0.30 + 0.2 * Math.abs(Math.sin(hole.ang * 2.2 + o.wob));
-            ctx.strokeStyle = C.lime; ctx.lineWidth = Math.max(1.5, o.r * 0.09);
-            ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 1.16, 0, 7); ctx.stroke();
-            ctx.globalAlpha = 1;
-          }
-          const s = o.r * 2.15;
-          ctx.drawImage(sprFor(o), o.x - s / 2, o.y - s / 2, s, s);
+          const s = o.r * 2.5;
+          ctx.drawImage(sprFor(o, !eatable && !o.suck), o.x - s / 2, o.y - s / 2, s, s);
         }
 
         // ondes
@@ -499,7 +581,7 @@
         for (const p of pops) {
           ctx.globalAlpha = Math.max(0, p.life) * 0.9;
           const s = hole.r * 0.5;
-          ctx.drawImage(sprite(p.txt, 96), p.x - s / 2, p.y - s / 2, s, s);
+          ctx.drawImage(p.spr, p.x - s / 2, p.y - s / 2, s, s);
         }
         ctx.globalAlpha = 1;
         ctx.restore();
@@ -517,7 +599,7 @@
             ctx.fillStyle = "#fff"; ctx.strokeStyle = C.ink; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.arc(0, 0, 15 * uiS, 0, 7); ctx.fill(); ctx.stroke();
             const s = 20 * uiS;
-            ctx.drawImage(sprite(o.emoji, 96), -s / 2, -s / 2, s, s);
+            ctx.drawImage(sprFor(o), -s / 2, -s / 2, s, s);
             ctx.restore();
           }
           ctx.globalAlpha = 1;
@@ -529,7 +611,7 @@
           ctx.fillStyle = theme.dark ? "#fff" : C.ink;
           ctx.font = "600 " + Math.round(17 * uiS) + "px Fredoka, sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText("Glisse ton doigt · avale les 🟢 · grossis", W / 2, H - 26 * uiS);
+          ctx.fillText("Glisse le trou sur ce qui est plus petit que lui", W / 2, H - 26 * uiS);
           ctx.globalAlpha = 1;
         }
       }
